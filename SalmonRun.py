@@ -40,7 +40,18 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
     def __init__(self, window):
         super(SoftwareRenderer, self).__init__(window)
 
+class Inert(sdl2.ext.Entity):
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+
 class Player(sdl2.ext.Entity):
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+        self.velocity = Velocity()
+
+class Enemy(sdl2.ext.Entity):
     def __init__(self, world, sprite, posx=0, posy=0):
         self.sprite = sprite
         self.sprite.position = posx, posy
@@ -56,15 +67,19 @@ def run():
     world.add_system(spriterenderer)
     
     factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
-    background = factory.from_image(RESOURCES.get_path('background.bmp'))
-    spriterenderer.render(background)
     
     movement = MovementSystem(0, 0, 800, 600)
     world.add_system(movement)
     
+    sp_background = factory.from_image(RESOURCES.get_path('background.bmp'))
+    background = Inert(world, sp_background, 0, 0)
+    
     sp_salmon = factory.from_image(RESOURCES.get_path('salmon.bmp'))
     salmon = Player(world, sp_salmon, 400, 550)
     
+    sp_renemy = factory.from_image(RESOURCES.get_path('redEnemy.bmp'))
+    enemy = Enemy(world, sp_renemy, 400, 100)
+
     running = True
     while running:
         events = sdl2.ext.get_events()
@@ -86,7 +101,6 @@ def run():
                     salmon.velocity.vx -= 1
                     salmon.velocity.vy -= 1
                     
-        spriterenderer.render(background)
         sdl2.SDL_Delay(10)
         world.process()
     
