@@ -1,9 +1,45 @@
 # We'll use sys to properly exit with an error code.
 import sys
 import sdl2.ext
+import random
 
 # Create a resource container:
 RESOURCES = sdl2.ext.Resources(__file__, "resources")
+
+### Begin Game Engine ###
+
+# Declare globals:
+death = False
+home_lock = True
+
+class Inert(sdl2.ext.Entity):
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+    def setDepth(self, depth):
+        self.sprite.depth = depth
+    
+class Player(sdl2.ext.Entity):
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+        self.velocity = Velocity()
+    def setDepth(self, depth):
+        self.sprite.depth = depth
+
+class Enemy(sdl2.ext.Entity):
+    def __init__(self, world, sprite, posx=0, posy=0):
+        self.sprite = sprite
+        self.sprite.position = posx, posy
+        self.velocity = Velocity()
+    def setDepth(self, depth):
+        self.sprite.depth = depth
+
+class Velocity(object):
+    def __init__(self):
+        super(Velocity, self).__init__()
+        self.vx = 0
+        self.vy = 0
 
 class MovementSystem(sdl2.ext.Applicator):
     def __init__(self, minx, miny, maxx, maxy):
@@ -30,82 +66,194 @@ class MovementSystem(sdl2.ext.Applicator):
             if pmaxy > self.maxy:
                 sprite.y = self.maxy - sheight
 
-class Velocity(object):
-    def __init__(self):
-        super(Velocity, self).__init__()
-        self.vx = 0
-        self.vy = 0
+class CollisionSystem(sdl2.ext.Applicator):
+    def __init__(self, minx, miny, maxx, maxy):
+        super(CollisionSystem, self).__init__()
+        self.componenttypes = Velocity, sdl2.ext.Sprite
+        self.minx = minx
+        self.miny = miny
+        self.maxx = maxx
+        self.maxy = maxy
+        self.salmon = None
+    
+    def _overlap(self, item):
+        pos, sprite = item
+        if sprite == self.salmon.sprite:
+            return False
+        left, top, right, bottom = sprite.area
+        s_left, s_top, s_right, s_bottom = self.salmon.sprite.area
+        return (s_left < right and s_right > left and s_top < bottom and s_bottom > top)
+    
+    def process(self, world, componentsets):
+        global death
+        global home_lock
+        if death == False and home_lock == False:
+            collitems = [comp for comp in componentsets if self._overlap(comp)]
+            if collitems:
+                # PIXEL-PERFECT COLLISION ... ANALYZE ALPHA CHANNEL PIXELS
+                #print(collitems)
+                #print(collitems[0][1])
+                #print(collitems[0][1].area)
+                #
+                death = True
 
 class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
     def __init__(self, window):
         super(SoftwareRenderer, self).__init__(window)
+    
+    def process(self, world, components):
+        global death
+        global home_lock
+        if death == True:
+            valid = [sprite for sprite in components if sprite.depth not in [2,3]]
+            delete = set(components) - set(valid)
+            self.render(sorted(valid, key=self._sortfunc))
+            for sprite in delete:
+                entity = world.get_entities(sprite)[0]
+                entity.delete()
+        elif home_lock == False:
+            valid = [sprite for sprite in components 
+                     if (sprite.depth==3 and sprite.area[1]==550)==False]
+            delete = set(components) - set(valid)
+    
+            self.render(sorted(valid, key=self._sortfunc))
+    
+            for sprite in delete:
+                entity = world.get_entities(sprite)[0]
+                entity.delete()
+        else:
+            self.render(sorted(components, key=self._sortfunc))
+        
+class Game(object):
+    def __init__(self, name, winx=800, winy=600):
+        sdl2.ext.init()
+        # Init basics:
+        self.window = sdl2.ext.Window(name, size=(winx, winy))
+        self.factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
+        self.world = sdl2.ext.World()
+        # Init systems:
+        self.movement = MovementSystem(90, 50, 710, winy) # Movement area hard-coded
+        self.collision = CollisionSystem(0, 0, winx, winy)
+        self.spriterenderer = SoftwareRenderer(self.window)
+        # Build world & show window:
+        self.world.add_system(self.spriterenderer)
+        self.world.add_system(self.movement)
+        self.world.add_system(self.collision)
+        self.window.show()
 
-class Inert(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
+### End Game Engine ###
+        
+# Z-LAYERING DEPTHS:
+#    0 - HIDE (HOME/GAMEOVER OFF)
+#    1 - BACKGROUND
+#    2 - SALMON
+#    3 - ENEMIES
+#    4 - HUD
+#    5 - SHOW (HOME/GAMEOVER ON)
+        
+### Begin Custom Game Implementation ###
 
-class Player(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
-        self.velocity = Velocity()
+class SalmonRun(Game):        
+    def __init__(self, name, winx, winy):
+        super(SalmonRun, self).__init__(name, winx, winy)
+        # Init sprites:
+        self.sp_homescreen = self.factory.from_image(RESOURCES.get_path('homescreen.bmp'))
+        self.sp_gameover = self.factory.from_image(RESOURCES.get_path('gameover.bmp'))
+        self.sp_background = self.factory.from_image(RESOURCES.get_path('background.bmp'))
+        self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
+        self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon.bmp'))
+        # Init sprite class instances: (except for the special salmon...)
+        self.homescreen = Inert(self.world, self.sp_homescreen, 0, 0)
+        self.gameover = Inert(self.world, self.sp_gameover, 0, 0)
+        self.background = Inert(self.world, self.sp_background, 0, 50)
+        self.dashboard = Inert(self.world, self.sp_dashboard,0, 0)
+    
+    def init_salmon(self):
+        self.salmon = Player(self.world, self.sp_salmon, 400, 550)
+        self.salmon.setDepth(2)
+        self.collision.salmon = self.salmon
+        
+    def render_home(self):
+        self.homescreen.setDepth(5)
+        self.world.process()
+        while home_lock == True:
+            events = sdl2.ext.get_events()
+            for event in events:
+                self.handleEvent(event)
+            self.world.process()
+        self.homescreen.setDepth(0)
+                
+    def render_game_over(self):
+        self.gameover.setDepth(5)
+        self.world.process()
+        sdl2.SDL_Delay(2000)
+        self.gameover.setDepth(0)
+        
+    def render_play(self):
+        self.init_salmon()
+        self.background.setDepth(1)
+        self.dashboard.setDepth(4)
+        
+    def spawn(self, path, depth):
+        v = random.randint(1,10)
+        x = random.randint(90,610)
+        sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
+        self.enemy = Enemy(self.world, sp_enemy, x, 0)
+        self.enemy.velocity.vy = v
+        self.enemy.setDepth(depth)
+    
+    def run(self):
+        self.render_home()
+        running = True
+        while running:
+            ticks = sdl2.timer.SDL_GetTicks()
+            # Spawn Enemies:
+            if ticks % 15 in range(1):
+                self.spawn('redEnemy.bmp', 3)
 
-class Enemy(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0):
-        self.sprite = sprite
-        self.sprite.position = posx, posy
-        self.velocity = Velocity()
-
-def run():
-    sdl2.ext.init()
-    window = sdl2.ext.Window("Salmon Run", size=(800, 600))
-    window.show()
+            # Process SDL events:
+            events = sdl2.ext.get_events()
+            for event in events:
+                #print(event.type)
+                self.handleEvent(event)
+            
+            global death
+            global home_lock
+            if death == True:
+                self.render_game_over()
+                death = False
+                home_lock = True
+                self.render_home() # CALLS render_play()!
+            sdl2.SDL_Delay(10)
+            self.world.process()
+        sdl2.ext.quit()
     
-    world = sdl2.ext.World()
-    spriterenderer = SoftwareRenderer(window)
-    world.add_system(spriterenderer)
-    
-    factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
-    
-    movement = MovementSystem(0, 0, 800, 600)
-    world.add_system(movement)
-    
-    sp_background = factory.from_image(RESOURCES.get_path('background.bmp'))
-    background = Inert(world, sp_background, 0, 0)
-    
-    sp_salmon = factory.from_image(RESOURCES.get_path('salmon.bmp'))
-    salmon = Player(world, sp_salmon, 400, 550)
-    
-    sp_renemy = factory.from_image(RESOURCES.get_path('redEnemy.bmp'))
-    enemy = Enemy(world, sp_renemy, 400, 100)
-
-    running = True
-    while running:
-        events = sdl2.ext.get_events()
-        for event in events:
+    def handleEvent(self, event):
+        global home_lock
+        if home_lock == True:
+            if event.key.keysym.sym == sdl2.SDLK_p:
+                home_lock = False
+                self.render_play()
+        else:
             if event.type == sdl2.SDL_QUIT:
                 running = False
-                break
             if event.type == sdl2.SDL_KEYDOWN:
                 if event.key.keysym.sym == sdl2.SDLK_LEFT:
-                    salmon.velocity.vx = -3
+                    self.salmon.velocity.vx = -3
                 elif event.key.keysym.sym == sdl2.SDLK_RIGHT:
-                    salmon.velocity.vx = 3
+                    self.salmon.velocity.vx = 3
                 elif event.key.keysym.sym == sdl2.SDLK_UP:
-                    salmon.velocity.vy = -3
+                    self.salmon.velocity.vy = -3
                 elif event.key.keysym.sym == sdl2.SDLK_DOWN:
-                    salmon.velocity.vy = 3
+                    self.salmon.velocity.vy = 3
             elif event.type == sdl2.SDL_KEYUP:
                 if event.key.keysym.sym in (sdl2.SDLK_LEFT, sdl2.SDLK_RIGHT, sdl2.SDLK_UP, sdl2.SDLK_DOWN):
-                    salmon.velocity.vx -= 1
-                    salmon.velocity.vy -= 1
-                    
-        sdl2.SDL_Delay(10)
-        world.process()
-    
-    sdl2.ext.quit()
-    return 0
+                    self.salmon.velocity.vx -= 1
+                    self.salmon.velocity.vy -= 1
+
+def main():
+    sr = SalmonRun("Salmon Run",800,650)
+    sr.run()
 
 if __name__ == "__main__":
-    sys.exit(run())
+    main()
