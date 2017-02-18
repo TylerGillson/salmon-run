@@ -9,6 +9,7 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 ### Begin Game Engine ###
 
 # Declare globals:
+running = True   # boolean for governing main event loop.
 death = False    # death is used as a trigger to indicate that the player has collided with                 either an enemy or an obstacle.
 home_lock = True # home_lock makes world.process() safe when rendering the home screen.                     It prevents certain inputs from crashing the game by attempting to                       influence sprites that do not currently exist.
 
@@ -109,7 +110,6 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
     def process(self, world, components):
         global death
         global home_lock
-        
         # On death, render everyhing except player and enemy sprites,
         # then delete all player and enemy sprites:
         if death == True:
@@ -123,7 +123,7 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
         # During game play, render everything except enemies that have reached the,
         # bottom of the screen, then delete said enemy sprites from the world.
         elif home_lock == False:
-            valid = [sprite for sprite in components if (sprite.depth==3 and sprite.area[1]==550)==False]
+            valid = [sprite for sprite in components if (sprite.depth==3 and sprite.area[1]==568)==False]
             delete = set(components) - set(valid)
             self.render(sorted(valid, key=self._sortfunc))
             for sprite in delete:
@@ -213,6 +213,10 @@ class SalmonRun(Game):
         self.enemy.setDepth(depth)
     
     def run(self):
+        global running
+        global death
+        global home_lock
+        
         self.render_home()                      # Render home screen
         running = True
         while running:                          # Begin event loop
@@ -224,9 +228,6 @@ class SalmonRun(Game):
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
-            
-            global death
-            global home_lock
             # Death process:
             if death == True:
                 self.render_game_over()         # Render Game Over screen & delete sprites
@@ -236,13 +237,21 @@ class SalmonRun(Game):
             sdl2.SDL_Delay(10)
             self.world.process()
         sdl2.ext.quit()
+        return 0
     
     def handleEvent(self, event):
         global home_lock
+        global running
+        # Handle home screen events:
         if home_lock == True:
-            if event.key.keysym.sym == sdl2.SDLK_p:
+            if event.type == sdl2.SDL_QUIT:
                 home_lock = False
-                self.render_play()              # Render game play screen
+                running = False
+            if event.type == sdl2.SDL_KEYDOWN:
+                if event.key.keysym.sym == sdl2.SDLK_p:
+                    home_lock = False
+                    self.render_play()          # Render game play screen
+        # Handle game play events:
         else:
             if event.type == sdl2.SDL_QUIT:
                 running = False
@@ -255,6 +264,8 @@ class SalmonRun(Game):
                     self.salmon.velocity.vy = -3
                 elif event.key.keysym.sym == sdl2.SDLK_DOWN:
                     self.salmon.velocity.vy = 3
+                elif event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                    running = False
             elif event.type == sdl2.SDL_KEYUP:
                 if event.key.keysym.sym in (sdl2.SDLK_LEFT, sdl2.SDLK_RIGHT, sdl2.SDLK_UP, sdl2.SDLK_DOWN):
                     self.salmon.velocity.vx -= 1
