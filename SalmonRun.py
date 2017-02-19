@@ -28,11 +28,18 @@ class Player(sdl2.ext.Entity):
     def setDepth(self, depth):
         self.sprite.depth = depth
 
+class PlayerData(object):
+    def __init__(self):
+        super(PlayerData, self).__init__()
+        self.ai = False
+
 class Enemy(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0):
+    def __init__(self, world, sprite, posx=0, posy=0, ai=False):
         self.sprite = sprite
         self.sprite.position = posx, posy
         self.velocity = Velocity()
+        self.playerdata = PlayerData()
+        self.playerdata.ai = ai
     def setDepth(self, depth):
         self.sprite.depth = depth
 
@@ -133,6 +140,37 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
         # While on the home screen, simply render everything:
         else:
             self.render(sorted(components, key=self._sortfunc))
+
+class TrackingAIController(sdl2.ext.Applicator):
+    def __init__(self, miny, maxy):
+        super(TrackingAIController, self).__init__()
+        self.componenttypes = PlayerData, Velocity, sdl2.ext.Sprite
+        self.miny = miny
+        self.maxy = maxy
+        self.target = None
+
+    def process(self, world, componentsets):
+        for pdata, vel, sprite in componentsets:
+            if not pdata.ai:        # Enemies with AI track salmon in x-axis
+                continue
+            # Calc homing sprite axis centres:
+            centerx = sprite.x + sprite.size[0] // 2
+            centery = sprite.y + sprite.size[1] // 2
+            # Calc target sprite axis centres:
+            s_centerx = self.target.sprite.x + self.target.sprite.size[0] // 2
+            s_centery = self.target.sprite.y + self.target.sprite.size[1] // 2
+            # If homing sprite is below target sprite, revert to standard velocity:
+            if s_centery < centery:
+                if vel.vx==0:
+                    continue
+                vel.vx = 0
+                vel.vy = random.randint(1,10)
+                continue
+            # Otherwise, track target sprite in the x-axis:
+            elif s_centerx < centerx:         # salmon is to the left
+                vel.vx = -3
+            elif s_centerx > centerx:       # salmon is to the right
+                vel.vx = 3
         
 class Game(object):
     def __init__(self, name, winx=800, winy=600):
@@ -145,10 +183,12 @@ class Game(object):
         self.movement = MovementSystem(90, 50, 710, winy) # Movement area hard-coded
         self.collision = CollisionSystem(0, 0, winx, winy)
         self.spriterenderer = SoftwareRenderer(self.window)
+        self.aicontroller = TrackingAIController(0, winy)
         # Build world & show window:
         self.world.add_system(self.spriterenderer)
         self.world.add_system(self.movement)
         self.world.add_system(self.collision)
+        self.world.add_system(self.aicontroller)
         self.window.show()
 
 ### End Game Engine ###
@@ -182,6 +222,7 @@ class SalmonRun(Game):
         self.salmon = Player(self.world, self.sp_salmon, 400, 550)
         self.salmon.setDepth(2)
         self.collision.salmon = self.salmon
+        self.aicontroller.target = self.salmon
         
     def render_home(self):
         self.homescreen.setDepth(5)
@@ -204,11 +245,14 @@ class SalmonRun(Game):
         self.background.setDepth(1)
         self.dashboard.setDepth(4)
         
-    def spawn(self, path, depth):
+    def spawn(self, path, depth, tracking):
         v = random.randint(1,10)
         x = random.randint(90,610)
         sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
-        self.enemy = Enemy(self.world, sp_enemy, x, 0)
+        if tracking:
+            self.enemy = Enemy(self.world, sp_enemy, x, 0, True)
+        else:
+            self.enemy = Enemy(self.world, sp_enemy, x, 0, False)
         self.enemy.velocity.vy = v
         self.enemy.setDepth(depth)
     
@@ -222,8 +266,11 @@ class SalmonRun(Game):
         while running:                          # Begin event loop
             ticks = sdl2.timer.SDL_GetTicks()
             # Spawn Enemies:
-            if ticks % 15 in range(1):
-                self.spawn('redEnemy.bmp', 3)
+            if (ticks % 100) > 95:
+                if (ticks % 100) > 97:          # Give 20% of enemies AI
+                    self.spawn('redEnemy.bmp', 3, True)
+                else:
+                    self.spawn('redEnemy.bmp', 3, False)
             # Process SDL events:
             events = sdl2.ext.get_events()
             for event in events:
@@ -257,9 +304,9 @@ class SalmonRun(Game):
                 running = False
             if event.type == sdl2.SDL_KEYDOWN:
                 if event.key.keysym.sym == sdl2.SDLK_LEFT:
-                    self.salmon.velocity.vx = -3
+                    self.salmon.velocity.vx = -6
                 elif event.key.keysym.sym == sdl2.SDLK_RIGHT:
-                    self.salmon.velocity.vx = 3
+                    self.salmon.velocity.vx = 6
                 elif event.key.keysym.sym == sdl2.SDLK_UP:
                     self.salmon.velocity.vy = -3
                 elif event.key.keysym.sym == sdl2.SDLK_DOWN:
