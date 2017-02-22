@@ -1,6 +1,7 @@
 # We'll use sys to properly exit with an error code.
 import sys
 import sdl2.ext
+import sdl2.sdlmixer
 import random
 
 # Create a resource container:
@@ -90,10 +91,33 @@ class CollisionSystem(sdl2.ext.Applicator):
             return False
         left, top, right, bottom = sprite.area
         s_left, s_top, s_right, s_bottom = self.salmon.sprite.area
-        return (s_left < right and 
-                s_right > left and 
-                s_top < bottom and 
-                s_bottom > top)
+        
+        coll = s_left < right and s_right > left and \
+               s_top < bottom and s_bottom > top
+        if coll:
+            coll = False
+            # Calculate Collision Rect:
+            x1 = max(left,s_left)
+            y1 = max(top,s_top)
+            x2 = min(right,s_right)
+            y2 = min(bottom,s_bottom)
+            w = x2 - x1
+            h = y2 - y1
+            # Pixel Perfect Collision:
+            x=0
+            y=0
+            sprite_pix = sdl2.ext.PixelView(sprite) #sdl2.ext.pixels2d(sprite)
+            salmon_pix = sdl2.ext.PixelView(self.salmon.sprite)
+            while y < h:
+                while x < w:
+                    if sprite_pix[y][x] != 0 and salmon_pix[y][x] != 0:
+                        #print(sprite_pix[y][x])
+                        #print(salmon_pix[y][x])
+                        coll = True
+                    x += 1
+                y += 1
+            
+        return coll
     
     def process(self, world, componentsets):
         global death
@@ -102,11 +126,6 @@ class CollisionSystem(sdl2.ext.Applicator):
         if death == False and home_lock == False:
             collitems = [comp for comp in componentsets if self._overlap(comp)]
             if collitems:
-                # PIXEL-PERFECT COLLISION ... ANALYZE ALPHA CHANNEL PIXELS
-                #print(collitems)
-                #print(collitems[0][1])
-                #print(collitems[0][1].area)
-                #
                 death = True
 
 class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
@@ -168,9 +187,17 @@ class TrackingAIController(sdl2.ext.Applicator):
                 continue
             # Otherwise, track target sprite in the x-axis:
             elif s_centerx < centerx:         # salmon is to the left
-                vel.vx = -3
+                if vel.vy > 6:
+                    vel.vx = -2
+                else:
+                    vel.vx = -4
+                #vel.vx = random.randint(1,10)*-1
             elif s_centerx > centerx:       # salmon is to the right
-                vel.vx = 3
+                if vel.vy > 6:
+                    vel.vx = 2
+                else:
+                    vel.vx = 4
+                #vel.vx = random.randint(1,10)
         
 class Game(object):
     def __init__(self, name, winx=800, winy=600):
@@ -244,7 +271,7 @@ class SalmonRun(Game):
         self.init_salmon()
         self.background.setDepth(1)
         self.dashboard.setDepth(4)
-        
+                
     def spawn(self, path, depth, tracking):
         v = random.randint(1,10)
         x = random.randint(90,610)
@@ -266,8 +293,8 @@ class SalmonRun(Game):
         while running:                          # Begin event loop
             ticks = sdl2.timer.SDL_GetTicks()
             # Spawn Enemies:
-            if (ticks % 100) > 95:
-                if (ticks % 100) > 97:          # Give 20% of enemies AI
+            if (ticks % 1000) > 920:
+                if (ticks % 1000) > 970:
                     self.spawn('redEnemy.bmp', 3, True)
                 else:
                     self.spawn('redEnemy.bmp', 3, False)
