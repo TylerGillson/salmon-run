@@ -26,8 +26,7 @@ __all__ = ["SDL_IMAGE_MAJOR_VERSION", "SDL_IMAGE_MINOR_VERSION", \
            ]
 
 try:
-    dll = DLL("SDL2_image", ["SDL2_image", "SDL2_image-2.0"],
-              os.getenv("/Users/tylergillson/Desktop/Salmon\ Run/SDL2"))
+    dll = DLL("SDL2_image", ["SDL2_image", "SDL2_image-2.0"],os.getenv(PYSDL2_DLL_PATH))
 except RuntimeError as exc:
     raise ImportError(exc)
 

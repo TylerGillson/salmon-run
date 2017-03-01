@@ -50,8 +50,7 @@ __all__ = ["get_dll_file", "SDL_MIXER_MAJOR_VERSION", "SDL_MIXER_MINOR_VERSION",
           ]
 
 try:
-    dll = DLL("SDL2_mixer", ["SDL2_mixer", "SDL2_mixer-2.0"],
-              os.getenv("/Users/tylergillson/Desktop/Salmon\ Run/SDL2"))
+    dll = DLL("SDL2_mixer", ["SDL2_mixer", "SDL2_mixer-2.0"], os.getenv(PYSDL2_DLL_PATH))
 except RuntimeError as exc:
     raise ImportError(exc)
 

@@ -35,7 +35,7 @@ __all__ = ["get_dll_file", "FPS_UPPER_LIMIT", "FPS_LOWER_LIMIT", "FPS_DEFAULT",
 
 try:
     dll = DLL("SDL2_gfx", ["SDL2_gfx", "SDL2_gfx-1.0"],
-              os.getenv("/Users/tylergillson/Desktop/Salmon\ Run/SDL2")) # Used to be: PYSDL2_DLL_PATH
+              os.getenv(PYSDL2_DLL_PATH)) # Used to be: PYSDL2_DLL_PATH
 except RuntimeError as exc:
     raise ImportError(exc)
 
