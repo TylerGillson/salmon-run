@@ -28,6 +28,8 @@ class Player(sdl2.ext.Entity):
         self.sprite.position = posx, posy
         self.velocity = Velocity()
         self.size = Size(1)
+        self.meals = Meals(0)
+        self.energy = Energy(100)
     def setDepth(self, depth):
         self.sprite.depth = depth
 
@@ -55,6 +57,22 @@ class Size(object):
         self.size += 1
     def decrement(self):
         self.size -= 1
+
+class Meals(object):
+    def __init__(self, meals=0):
+        super(Meals, self).__init__()
+        self.meals = meals
+    def eat(self):
+        self.meals += 1
+    def reset(self):
+        self.meals = 0
+
+class Energy(object):
+    def __init__(self, energy=0):
+        super(Energy, self).__init__()
+        self.energy = energy
+    def boost(self, amount):
+        self.energy += amount
 
 class Velocity(object):
     def __init__(self):
@@ -99,8 +117,7 @@ class CollisionSystem(sdl2.ext.Applicator):
     
     def _overlap(self, item):
         size, pos, sprite = item
-        #if sprite == self.salmon.sprite:
-        print(sprite, sprite.depth)
+        
         if sprite.depth != 3:
             return False
         
@@ -144,14 +161,17 @@ class CollisionSystem(sdl2.ext.Applicator):
             if collitems:
                 size, pos, sprite = collitems[0]
                 if self.salmon.size.size > size.size:
-                    print('EAT!')
+                    entity = world.get_entities(sprite)[0]
+                    entity.delete()                 # Delete eaten enemy
+                    self.salmon.meals.eat()         # Increment meals counter
+                    #print(self.salmon.meals.meals)
                 else:
                     death = True
 
 class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
     def __init__(self, window):
         super(SoftwareRenderer, self).__init__(window)
-    
+        
     # Manage sprite rendering according to state of globals:
     def process(self, world, components):
         global death
@@ -251,6 +271,24 @@ class Game(object):
 #    4 - HUD
 #    5 - SHOW (HOME/GAMEOVER ON)
 
+# Sizing Guide:
+#   0 - greenEnemy / salmon0
+#   1 - blueEnemy / salmon1
+#   2 
+#   3
+#   4
+#   5
+#   6
+#   7
+#   8
+#   9
+#   10
+#   11
+#   12
+#   13
+#   14 - 
+#   15 - redEnemy / salmon15
+
 ### Begin Custom Game Implementation ###
 
 class SalmonRun(Game):
@@ -273,7 +311,6 @@ class SalmonRun(Game):
         
     def init_salmon(self):
         self.salmon = Player(self.world, self.sp_salmon, 400, 550)
-        print(self.salmon.size)
         self.salmon.setDepth(2)
         self.collision.salmon = self.salmon
         self.aicontroller.target = self.salmon
@@ -312,13 +349,14 @@ class SalmonRun(Game):
         self.enemy.setDepth(depth)
     
     def music(self):
-            mixformat = sdl2.sdlmixer.MIX_DEFAULT_FORMAT  # sets up the format for OpenAudio
-            musicfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/sounds","Chiptune.mp3")  # Chiptune Music file pointer
-            music_init = sdl2.sdlmixer.MIX_INIT_MP3
-            sdl2.sdlmixer.Mix_Init(music_init)
-            sdl2.sdlmixer.Mix_OpenAudio(22050, mixformat, 2, 4096)
-            loadmusic = sdl2.sdlmixer.Mix_LoadMUS(musicfile.encode("utf-8")) # pre-Load Music
-            sdl2.sdlmixer.Mix_PlayMusic(loadmusic, -1)  # play music
+        mixformat = sdl2.sdlmixer.MIX_DEFAULT_FORMAT  # sets up the format for OpenAudio
+        musicfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/sounds","Chiptune.wav")
+        music_init = sdl2.sdlmixer.MIX_INIT_MP3
+        sdl2.sdlmixer.Mix_Init(music_init)
+        sdl2.sdlmixer.Mix_OpenAudio(22050, mixformat, 2, 4096)
+        loadmusic = sdl2.sdlmixer.Mix_LoadMUS(musicfile.encode("utf-8")) # pre-Load Music
+        sdl2.sdlmixer.Mix_PlayMusic(loadmusic, -1)  # play music
+        #print(sdl2.sdlmixer.Mix_GetError())
     
     def run(self):
         global running
@@ -332,7 +370,7 @@ class SalmonRun(Game):
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
-                num = random.randint(1,3)
+                num = random.randint(1,3)       # Give 1/3 of enemies ai
                 ai_flag = True if num == 1 else False
                 if delta_t % 2 == 0:
                     self.spawn('greenEnemy.bmp', 0, 3, ai_flag)
