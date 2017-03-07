@@ -127,29 +127,28 @@ class CollisionSystem(sdl2.ext.Applicator):
         coll = s_left < right and s_right > left and \
                s_top < bottom and s_bottom > top
         
-        #if coll:
-        #    coll = False
-        #    # Calculate Collision Rect:
-        #    x1 = max(left,s_left)
-        #    y1 = max(top,s_top)
-        #    x2 = min(right,s_right)
-        #    y2 = min(bottom,s_bottom)
-        #    w = x2 - x1
-        #    h = y2 - y1
+        if coll:
+            coll = False
+            # Calculate Collision Rect:
+            x1 = max(left,s_left)
+            y1 = max(top,s_top)
+            x2 = min(right,s_right)
+            y2 = min(bottom,s_bottom)
+            w = x2 - x1
+            h = y2 - y1
             # Pixel Perfect Collision:
-        #    x=0
-        #    y=0
-        #    sprite_pix = sdl2.ext.PixelView(sprite) #sdl2.ext.pixels2d(sprite)
-        #    salmon_pix = sdl2.ext.PixelView(self.salmon.sprite)
-        #    while y < h:
-        #        while x < w:
-        #            if sprite_pix[y][x] != 0 and salmon_pix[y][x] != 0:
-                        #print(sprite_pix[y][x])
-                        #print(salmon_pix[y][x])
-        #                coll = True
-        #            x += 1
-        #        y += 1
-            
+            x=0
+            y=0
+            sprite_pix = sdl2.ext.PixelView(sprite)
+            salmon_pix = sdl2.ext.PixelView(self.salmon.sprite)
+            while y < h:
+                while x < w:
+                    if sprite_pix[y][x] != 0 and salmon_pix[y][x] != 0:
+                    #print(sprite_pix[y][x])
+                    #print(salmon_pix[y][x])
+                        coll = True
+                    x += 1
+                y += 1
         return coll
     
     def process(self, world, componentsets):
@@ -164,7 +163,10 @@ class CollisionSystem(sdl2.ext.Applicator):
                     entity = world.get_entities(sprite)[0]
                     entity.delete()                 # Delete eaten enemy
                     self.salmon.meals.eat()         # Increment meals counter
-                    #print(self.salmon.meals.meals)
+                    print(self.salmon.meals.meals, self.salmon.size.size)
+                    if self.salmon.meals.meals == 5:
+                        self.salmon.meals.reset()
+                        self.salmon.size.increment()
                 else:
                     death = True
 
@@ -272,22 +274,21 @@ class Game(object):
 #    5 - SHOW (HOME/GAMEOVER ON)
 
 # Sizing Guide:
-#   0 - greenEnemy / salmon0
-#   1 - blueEnemy / salmon1
-#   2 
-#   3
-#   4
-#   5
-#   6
-#   7
-#   8
-#   9
-#   10
-#   11
-#   12
-#   13
-#   14 - 
-#   15 - redEnemy / salmon15
+#   0 - 243,43,253
+#   1 - 166,39,251
+#   2 - 87,36,249
+#   3 - 33,58,247
+#   4 - 29,132,246
+#   5 - 26,207,244
+#   6 - 23,242,201
+#   7 - 20,241,120
+#   8 - 17,239,38
+#   9 - 73,237,14
+#   10 - 150,235,11
+#   11 - 229,234,8
+#   12 - 232,156,5
+#   13 - 230,72,2
+#   14 - 229,0,11
 
 ### Begin Custom Game Implementation ###
 
@@ -348,6 +349,38 @@ class SalmonRun(Game):
         self.enemy.size.size = size
         self.enemy.setDepth(depth)
     
+    def manage_spawn(self, delta_t, ai_flag):
+        if delta_t % 1 == 0:
+            self.spawn('enemy0.bmp', 0, 3, ai_flag)
+        if delta_t % 2 == 0:
+            self.spawn('enemy1.bmp', 1, 3, ai_flag)
+        if delta_t % 3 == 0:
+            self.spawn('enemy2.bmp', 2, 3, ai_flag)
+        if delta_t % 4 == 0:
+            self.spawn('enemy3.bmp', 3, 3, ai_flag)
+        if delta_t % 5 == 0:
+            self.spawn('enemy4.bmp', 4, 3, ai_flag)
+        if delta_t % 8 == 0:
+            self.spawn('enemy5.bmp', 5, 3, ai_flag)
+        if delta_t % 10 == 0:
+            self.spawn('enemy6.bmp', 6, 3, ai_flag)
+        if delta_t % 12 == 0:
+            self.spawn('enemy7.bmp', 7, 3, ai_flag)
+        if delta_t % 14 == 0:
+            self.spawn('enemy8.bmp', 8, 3, ai_flag)
+        if delta_t % 16 == 0:
+            self.spawn('enemy9.bmp', 9, 3, ai_flag)
+        if delta_t % 18 == 0:
+            self.spawn('enemy10.bmp', 10, 3, ai_flag)
+        if delta_t % 20 == 0:
+            self.spawn('enemy11.bmp', 11, 3, ai_flag)
+        if delta_t % 22 == 0:
+            self.spawn('enemy12.bmp', 12, 3, ai_flag)
+        if delta_t % 24 == 0:
+            self.spawn('enemy13.bmp', 13, 3, ai_flag)
+        if delta_t % 26 == 0:
+            self.spawn('enemy14.bmp', 14, 3, ai_flag)
+    
     def music(self):
         mixformat = sdl2.sdlmixer.MIX_DEFAULT_FORMAT  # sets up the format for OpenAudio
         musicfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/sounds","Chiptune.wav")
@@ -370,15 +403,10 @@ class SalmonRun(Game):
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
-                num = random.randint(1,3)       # Give 1/3 of enemies ai
+                num = random.randint(1,6)       # Give 1/6 of enemies ai
                 ai_flag = True if num == 1 else False
-                if delta_t % 2 == 0:
-                    self.spawn('greenEnemy.bmp', 0, 3, ai_flag)
-                elif delta_t % 3 == 0:
-                    self.spawn('blueEnemy.bmp', 2, 3, ai_flag)
-                elif delta_t % 5 == 0:
-                    self.spawn('redEnemy.bmp', 3, 3, ai_flag)
-                # Process SDL events:
+                self.manage_spawn(delta_t, ai_flag)  # Spawn enemies
+            # Process SDL events:
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
