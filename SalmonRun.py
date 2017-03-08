@@ -1,5 +1,5 @@
-import os
 import sys
+import os
 import sdl2.ext
 import sdl2.sdlmixer
 import random
@@ -7,166 +7,12 @@ import time
 # Custom Modules:
 import globals
 import sprite_classes
+import collision
+import renderers
+import movement
 
 # Create a resource container:
 RESOURCES = sdl2.ext.Resources(__file__, "resources")
-
-### Begin Game Engine ###
-
-class MovementSystem(sdl2.ext.Applicator):
-    def __init__(self, minx, miny, maxx, maxy):
-        super(MovementSystem, self).__init__()
-        self.componenttypes = sprite_classes.Velocity, sdl2.ext.Sprite
-        self.minx = minx
-        self.miny = miny
-        self.maxx = maxx
-        self.maxy = maxy
-
-    def process(self, world, componentsets):
-        for velocity, sprite in componentsets:
-            swidth, sheight = sprite.size
-            sprite.x += velocity.vx
-            sprite.y += velocity.vy
-
-            sprite.x = max(self.minx, sprite.x)
-            sprite.y = max(self.miny, sprite.y)
-
-            pmaxx = sprite.x + swidth
-            pmaxy = sprite.y + sheight
-            if pmaxx > self.maxx:
-                sprite.x = self.maxx - swidth
-            if pmaxy > self.maxy:
-                sprite.y = self.maxy - sheight
-
-class CollisionSystem(sdl2.ext.Applicator):
-    def __init__(self, minx, miny, maxx, maxy):
-        super(CollisionSystem, self).__init__()
-        self.componenttypes = sprite_classes.Size, sprite_classes.Velocity, sdl2.ext.Sprite
-        self.minx = minx
-        self.miny = miny
-        self.maxx = maxx
-        self.maxy = maxy
-        self.salmon = None
-
-    def _overlap(self, item):
-        size, pos, sprite = item
-
-        if sprite.depth != 3:
-            return False
-
-        left, top, right, bottom = sprite.area
-        s_left, s_top, s_right, s_bottom = self.salmon.sprite.area
-
-        coll = s_left < right and s_right > left and \
-               s_top < bottom and s_bottom > top
-
-        if coll:
-            coll = False
-            # Calculate Collision Rect:
-            x1 = max(left,s_left)
-            y1 = max(top,s_top)
-            x2 = min(right,s_right)
-            y2 = min(bottom,s_bottom)
-            w = x2 - x1
-            h = y2 - y1
-            # Pixel Perfect Collision:
-            x=0
-            y=0
-            sprite_pix = sdl2.ext.PixelView(sprite)
-            salmon_pix = sdl2.ext.PixelView(self.salmon.sprite)
-            while y < h:
-                while x < w:
-                    if sprite_pix[y][x] != 0 and salmon_pix[y][x] != 0:
-                    #print(sprite_pix[y][x])
-                    #print(salmon_pix[y][x])
-                        coll = True
-                    x += 1
-                y += 1
-        return coll
-
-    def process(self, world, componentsets):
-        # During game play, check for sprite collisions:
-        if globals.death == False and globals.home_lock == False:
-            collitems = [comp for comp in componentsets if self._overlap(comp)]
-            if collitems:
-                size, pos, sprite = collitems[0]
-                if self.salmon.size.size > size.size:
-                    entity = world.get_entities(sprite)[0]
-                    entity.delete()                 # Delete eaten enemy
-                    self.salmon.meals.eat()         # Increment meals counter
-                    print(self.salmon.meals.meals, self.salmon.size.size)
-                    if self.salmon.meals.meals == 5:
-                        self.salmon.meals.reset()
-                        self.salmon.size.increment()
-                else:
-                    globals.death = True
-
-class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
-    def __init__(self, window):
-        super(SoftwareRenderer, self).__init__(window)
-
-    # Manage sprite rendering according to state of globals:
-    def process(self, world, components):
-        # On death, render everyhing except player and enemy sprites,
-        # then delete all player and enemy sprites:
-        if globals.death == True:
-            valid = [sprite for sprite in components if sprite.depth not in [2,3]]
-            delete = set(components) - set(valid)
-            self.render(sorted(valid, key=self._sortfunc))
-            for sprite in delete:
-                entity = world.get_entities(sprite)[0]
-                entity.delete()
-
-        # During game play, render everything except enemies that have reached the,
-        # bottom of the screen, then delete said enemy sprites from the world.
-        elif globals.home_lock == False:
-            valid = [sprite for sprite in components if (sprite.depth==3 and sprite.area[3]==650)==False]
-            delete = set(components) - set(valid)
-            self.render(sorted(valid, key=self._sortfunc))
-            for sprite in delete:
-                entity = world.get_entities(sprite)[0]
-                entity.delete()
-
-        # While on the home screen, simply render everything:
-        else:
-            self.render(sorted(components, key=self._sortfunc))
-
-class TrackingAIController(sdl2.ext.Applicator):
-    def __init__(self, miny, maxy):
-        super(TrackingAIController, self).__init__()
-        self.componenttypes = sprite_classes.PlayerData, sprite_classes.Velocity, sdl2.ext.Sprite
-        self.miny = miny
-        self.maxy = maxy
-        self.target = None
-
-    def process(self, world, componentsets):
-        for pdata, vel, sprite in componentsets:
-            if not pdata.ai:        # Enemies with AI track salmon in x-axis
-                continue
-            # Calc homing sprite axis centres:
-            centerx = sprite.x + sprite.size[0] // 2
-            centery = sprite.y + sprite.size[1] // 2
-            # Calc target sprite axis centres:
-            s_centerx = self.target.sprite.x + self.target.sprite.size[0] // 2
-            s_centery = self.target.sprite.y + self.target.sprite.size[1] // 2
-            # If homing sprite is below target sprite, revert to standard velocity:
-            if s_centery < centery:
-                if vel.vx==0:
-                    continue
-                vel.vx = 0
-                vel.vy = random.randint(1,10)
-                continue
-            # Otherwise, track target sprite in the x-axis:
-            elif s_centerx < centerx:         # salmon is to the left
-                if vel.vy > 6:
-                    vel.vx = -2
-                else:
-                    vel.vx = -4
-            elif s_centerx > centerx:       # salmon is to the right
-                if vel.vy > 6:
-                    vel.vx = 2
-                else:
-                    vel.vx = 4
 
 class Game(object):
     def __init__(self, name, winx=800, winy=600):
@@ -176,21 +22,21 @@ class Game(object):
         self.factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
         self.world = sdl2.ext.World()
         # Init systems:
-        self.movement = MovementSystem(90, 50, 710, winy) # Movement area hard-coded
-        self.collision = CollisionSystem(0, 0, winx, winy)
-        self.spriterenderer = SoftwareRenderer(self.window)
-        self.aicontroller = TrackingAIController(0, winy)
+        self.movement = movement.MovementSystem(90, 50, 710, winy) # Movement area hard-coded
+        self.collision = collision.CollisionSystem(0, 0, winx, winy)
+        self.spriterenderer = renderers.SoftwareRenderer(self.window)
+        self.texspriterenderer = renderers.TextureRenderer(self.window)
+        self.aicontroller = movement.TrackingAIController(0, winy)
         # Build world & show window:
         self.world.add_system(self.spriterenderer)
+        self.world.add_system(self.texspriterenderer)
         self.world.add_system(self.movement)
         self.world.add_system(self.collision)
         self.world.add_system(self.aicontroller)
         self.window.show()
-
+        # Init time variables:
         self.start_t = time.time()
         self.old_t = 0
-
-### End Game Engine ###
 
 # Z-LAYERING DEPTHS:
 #    0 - HIDE (HOME/GAMEOVER OFF)
@@ -199,8 +45,6 @@ class Game(object):
 #    3 - ENEMIES
 #    4 - HUD
 #    5 - SHOW (HOME/GAMEOVER ON)
-
-### Begin Custom Game Implementation ###
 
 class SalmonRun(Game):
     def __init__(self, name, winx, winy):
@@ -300,6 +144,36 @@ class SalmonRun(Game):
         loadmusic = sdl2.sdlmixer.Mix_LoadMUS(musicfile.encode("utf-8")) # pre-Load Music
         sdl2.sdlmixer.Mix_PlayMusic(loadmusic, -1)  # play music
 
+    def handleEvent(self, event):
+        # Handle home screen events:
+        if globals.home_lock == True:
+            if event.type == sdl2.SDL_QUIT:
+                globals.home_lock = False
+                globals.running = False
+            if event.type == sdl2.SDL_KEYDOWN:
+                if event.key.keysym.sym == sdl2.SDLK_p:
+                    globals.home_lock = False
+                    self.render_play()          # Render game play screen
+        # Handle game play events:
+        else:
+            if event.type == sdl2.SDL_QUIT:
+                globals.running = False
+            if event.type == sdl2.SDL_KEYDOWN:
+                if event.key.keysym.sym == sdl2.SDLK_LEFT:
+                    self.salmon.velocity.vx = -6
+                elif event.key.keysym.sym == sdl2.SDLK_RIGHT:
+                    self.salmon.velocity.vx = 6
+                elif event.key.keysym.sym == sdl2.SDLK_UP:
+                    self.salmon.velocity.vy = -3
+                elif event.key.keysym.sym == sdl2.SDLK_DOWN:
+                    self.salmon.velocity.vy = 3
+                elif event.key.keysym.sym == sdl2.SDLK_ESCAPE:
+                    globals.running = False
+            elif event.type == sdl2.SDL_KEYUP:
+                if event.key.keysym.sym in (sdl2.SDLK_LEFT, sdl2.SDLK_RIGHT, sdl2.SDLK_UP, sdl2.SDLK_DOWN):
+                    self.salmon.velocity.vx -= 1
+                    self.salmon.velocity.vy -= 1
+
     def run(self):
         self.music()                            # Init music capabilities
         self.render_home()                      # Render home screen
@@ -326,36 +200,6 @@ class SalmonRun(Game):
             self.world.process()
         sdl2.ext.quit()
         return 0
-
-    def handleEvent(self, event):
-          # Handle home screen events:
-          if globals.home_lock == True:
-              if event.type == sdl2.SDL_QUIT:
-                  globals.home_lock = False
-                  globals.running = False
-              if event.type == sdl2.SDL_KEYDOWN:
-                  if event.key.keysym.sym == sdl2.SDLK_p:
-                      globals.home_lock = False
-                      self.render_play()          # Render game play screen
-          # Handle game play events:
-          else:
-              if event.type == sdl2.SDL_QUIT:
-                  globals.running = False
-              if event.type == sdl2.SDL_KEYDOWN:
-                  if event.key.keysym.sym == sdl2.SDLK_LEFT:
-                      self.salmon.velocity.vx = -6
-                  elif event.key.keysym.sym == sdl2.SDLK_RIGHT:
-                      self.salmon.velocity.vx = 6
-                  elif event.key.keysym.sym == sdl2.SDLK_UP:
-                      self.salmon.velocity.vy = -3
-                  elif event.key.keysym.sym == sdl2.SDLK_DOWN:
-                      self.salmon.velocity.vy = 3
-                  elif event.key.keysym.sym == sdl2.SDLK_ESCAPE:
-                      globals.running = False
-              elif event.type == sdl2.SDL_KEYUP:
-                  if event.key.keysym.sym in (sdl2.SDLK_LEFT, sdl2.SDLK_RIGHT, sdl2.SDLK_UP, sdl2.SDLK_DOWN):
-                      self.salmon.velocity.vx -= 1
-                      self.salmon.velocity.vy -= 1
 
 def main():
     sr = SalmonRun("Salmon Run",800,650)
