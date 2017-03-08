@@ -1,42 +1,15 @@
 import sys
-import os
 import sdl2.ext
-import sdl2.sdlmixer
 import random
 import time
 # Custom Modules:
+import game
 import globals
 import sprite_classes
-import collision
-import renderers
-import movement
+import music
 
 # Create a resource container:
 RESOURCES = sdl2.ext.Resources(__file__, "resources")
-
-class Game(object):
-    def __init__(self, name, winx=800, winy=600):
-        sdl2.ext.init()
-        # Init basics:
-        self.window = sdl2.ext.Window(name, size=(winx, winy))
-        self.factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
-        self.world = sdl2.ext.World()
-        # Init systems:
-        self.movement = movement.MovementSystem(90, 50, 710, winy) # Movement area hard-coded
-        self.collision = collision.CollisionSystem(0, 0, winx, winy)
-        self.spriterenderer = renderers.SoftwareRenderer(self.window)
-        self.texspriterenderer = renderers.TextureRenderer(self.window)
-        self.aicontroller = movement.TrackingAIController(0, winy)
-        # Build world & show window:
-        self.world.add_system(self.spriterenderer)
-        self.world.add_system(self.texspriterenderer)
-        self.world.add_system(self.movement)
-        self.world.add_system(self.collision)
-        self.world.add_system(self.aicontroller)
-        self.window.show()
-        # Init time variables:
-        self.start_t = time.time()
-        self.old_t = 0
 
 # Z-LAYERING DEPTHS:
 #    0 - HIDE (HOME/GAMEOVER OFF)
@@ -46,7 +19,7 @@ class Game(object):
 #    4 - HUD
 #    5 - SHOW (HOME/GAMEOVER ON)
 
-class SalmonRun(Game):
+class SalmonRun(game.Game):
     def __init__(self, name, winx, winy):
         super(SalmonRun, self).__init__(name, winx, winy)
         # Init sprites:
@@ -62,7 +35,7 @@ class SalmonRun(Game):
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
 
     def init_numbers(self):
-        self.zero = self.factory.from_image(RESOURCES.get_path('s_numbers.bmp'))
+        self.zero = game.factory.from_image(RESOURCES.get_path('s_numbers.bmp'))
 
     def init_salmon(self):
         self.salmon = sprite_classes.Player(self.world, self.sp_salmon, 400, 550)
@@ -135,15 +108,6 @@ class SalmonRun(Game):
         if delta_t % 26 == 0:
             self.spawn('enemy14.bmp', 14, 3, ai_flag)
 
-    def music(self):
-        mixformat = sdl2.sdlmixer.MIX_DEFAULT_FORMAT  # sets up the format for OpenAudio
-        musicfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), "resources/sounds","Chiptune.wav")
-        music_init = sdl2.sdlmixer.MIX_INIT_MP3
-        sdl2.sdlmixer.Mix_Init(music_init)
-        sdl2.sdlmixer.Mix_OpenAudio(22050, mixformat, 2, 4096)
-        loadmusic = sdl2.sdlmixer.Mix_LoadMUS(musicfile.encode("utf-8")) # pre-Load Music
-        sdl2.sdlmixer.Mix_PlayMusic(loadmusic, -1)  # play music
-
     def handleEvent(self, event):
         # Handle home screen events:
         if globals.home_lock == True:
@@ -175,10 +139,10 @@ class SalmonRun(Game):
                     self.salmon.velocity.vy -= 1
 
     def run(self):
-        self.music()                            # Init music capabilities
+        music.play_music()                      # Play background music
         self.render_home()                      # Render home screen
         globals.running = True
-        while globals.running:                          # Begin event loop
+        while globals.running:                  # Begin event loop
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
