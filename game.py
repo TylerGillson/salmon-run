@@ -1,5 +1,6 @@
 import sdl2.ext
 import time
+import sdl2.render
 # Custom Modules:
 import movement
 import collision
@@ -16,11 +17,9 @@ class Game(object):
         self.movement = movement.MovementSystem(90, 50, 710, winy) # Movement area hard-coded
         self.collision = collision.CollisionSystem(0, 0, winx, winy)
         self.spriterenderer = renderers.SoftwareRenderer(self.window)
-        self.texspriterenderer = renderers.TextureRenderer(self.window)
         self.aicontroller = movement.TrackingAIController(0, winy)
         # Build world & show window:
         self.world.add_system(self.spriterenderer)
-        self.world.add_system(self.texspriterenderer)
         self.world.add_system(self.movement)
         self.world.add_system(self.collision)
         self.world.add_system(self.aicontroller)

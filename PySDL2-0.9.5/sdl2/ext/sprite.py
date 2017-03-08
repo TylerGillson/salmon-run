@@ -298,8 +298,6 @@ class Renderer(object):
             if ret == -1:
                 raise SDLError()
 
-
-
 class Sprite(object):
     """A simple 2D object."""
     __metaclass__ = abc.ABCMeta
@@ -333,7 +331,6 @@ class Sprite(object):
         """The rectangular area occupied by the Sprite."""
         w, h = self.size
         return (self.x, self.y, self.x + w, self.y + h)
-
 
 class SoftwareSprite(Sprite):
     """A simple, visible, pixel-based 2D object using software buffers."""

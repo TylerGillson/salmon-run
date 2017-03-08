@@ -28,11 +28,16 @@ class SalmonRun(game.Game):
         self.sp_background = self.factory.from_image(RESOURCES.get_path('background.bmp'))
         self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
         self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon.bmp'))
+        self.sp_energy = self.factory.from_color((0,255,0,0),(615,15,10,30))
+
         # Init sprite class instances: (except for the special salmon...)
         self.homescreen = sprite_classes.Inert(self.world, self.sp_homescreen, 0, 0)
         self.gameover = sprite_classes.Inert(self.world, self.sp_gameover, 0, 0)
         self.background = sprite_classes.Inert(self.world, self.sp_background, 0, 50)
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
+
+        self.energy = sprite_classes.Inert(self.world, self.sp_energy,615,15)
+        self.energy.setDepth(6)
 
     def init_numbers(self):
         self.zero = game.factory.from_image(RESOURCES.get_path('s_numbers.bmp'))

@@ -3,19 +3,6 @@ import sdl2.ext
 import sprite_classes
 import globals
 
-class TextureRenderer(sdl2.ext.TextureSpriteRenderSystem):
-    def __init__(self, window):
-        super(TextureRenderer, self).__init__(window)
-    def process(self, world, components):
-        if globals.death == True:
-            valid = [sprite for sprite in components]
-            self.render(sorted(valid, key=self._sortfunc))
-        elif globals.home_lock == False:
-            valid = [sprite for sprite in components]
-            self.render(sorted(valid, key=self._sortfunc))
-        else:
-            self.render(sorted(components, key=self._sortfunc))
-
 class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
     def __init__(self, window):
         super(SoftwareRenderer, self).__init__(window)
