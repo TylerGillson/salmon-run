@@ -1,1 +1,1 @@
-This repo will eventually store the code for an awesome game!
+Salmon Run is a true-death survival game. Its really hard right now.
