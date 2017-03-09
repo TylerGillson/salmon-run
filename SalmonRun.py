@@ -50,7 +50,7 @@ class SalmonRun(game.Game):
             x += 30
 
     def render_score(self):
-        self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font())
+        self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font('Score'))
         self.score_obj = sprite_classes.Inert(self.world, self.sp_score,84,18)
         self.score_obj.setDepth(5)
         self.score += 1
@@ -65,25 +65,33 @@ class SalmonRun(game.Game):
     def grow_salmon(self):
         x,y = self.salmon.sprite.position
         size = self.salmon.size.size
-        meals = self.salmon.meals.meals
-        velocity = self.salmon.velocity.get_velocity()
-        energy = self.salmon.energy.energy
-        # Delete old salmon:
-        entity = self.world.get_entities(self.salmon.sprite)[0]
-        entity.delete()
-        # Init new salmon:
-        self.init_salmon(x,y,size-1,meals,velocity,energy)
-        globals.grow_salmon = False
+        if size < 14:
+            meals = self.salmon.meals.meals
+            velocity = self.salmon.velocity.get_velocity()
+            energy = self.salmon.energy.energy
+            # Delete old salmon:
+            entity = self.world.get_entities(self.salmon.sprite)[0]
+            entity.delete()
+            # Init new salmon:
+            self.init_salmon(x,y,size-1,meals,velocity,energy)
+            globals.grow_salmon = False
 
     def render_home(self):
+        self.sp_title = self.factory.from_text('SALMON RUN',fontmanager=fonts.make_font('Title'))
+        self.title = sprite_classes.Inert(self.world, self.sp_title,66,110)
+        self.title.setDepth(7)
+        self.sp_play = self.factory.from_text('PRESS "P" TO PLAY',fontmanager=fonts.make_font('Play'))
+        self.play = sprite_classes.Inert(self.world, self.sp_play,150,330)
+        self.play.setDepth(7)
         self.homescreen.setDepth(6)
-        self.world.process()
         while globals.home_lock == True:                # Wait for user-input
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
             self.world.process()
         self.homescreen.setDepth(0)
+        self.title.setDepth(0)
+        self.play.setDepth(0)
 
     def render_game_over(self):
         self.gameover.setDepth(6)
@@ -163,7 +171,7 @@ class SalmonRun(game.Game):
                 elif event.key.keysym.sym == sdl2.SDLK_UP:
                     self.salmon.velocity.vy = -3
                 elif event.key.keysym.sym == sdl2.SDLK_DOWN:
-                    self.salmon.velocity.vy = 3
+                    self.salmon.velocity.vy = 6
                 elif event.key.keysym.sym == sdl2.SDLK_ESCAPE:
                     globals.running = False
             elif event.type == sdl2.SDL_KEYUP:
