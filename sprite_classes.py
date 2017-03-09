@@ -4,17 +4,19 @@ class Inert(sdl2.ext.Entity):
     def __init__(self, world, sprite, posx=0, posy=0):
         self.sprite = sprite
         self.sprite.position = posx, posy
+    def setPos(self, x,y):
+        self.sprite.position = x, y
     def setDepth(self, depth):
         self.sprite.depth = depth
 
 class Player(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0):
+    def __init__(self, world, sprite, posx, posy, size, meals, velocity, energy):
         self.sprite = sprite
         self.sprite.position = posx, posy
-        self.velocity = Velocity()
-        self.size = Size(1)
-        self.meals = Meals(0)
-        self.energy = Energy(155)
+        self.velocity = Velocity(velocity)
+        self.size = Size(size)
+        self.meals = Meals(meals)
+        self.energy = Energy(energy)
     def setDepth(self, depth):
         self.sprite.depth = depth
 
@@ -24,10 +26,10 @@ class PlayerData(object):
         self.ai = False
 
 class Enemy(sdl2.ext.Entity):
-    def __init__(self, world, sprite, posx=0, posy=0, ai=False):
+    def __init__(self, world, sprite, velocity, posx=0, posy=0, ai=False):
         self.sprite = sprite
         self.sprite.position = posx, posy
-        self.velocity = Velocity()
+        self.velocity = Velocity(velocity)
         self.playerdata = PlayerData()
         self.playerdata.ai = ai
         self.size = Size()
@@ -60,7 +62,9 @@ class Energy(object):
         self.energy += amount
 
 class Velocity(object):
-    def __init__(self):
+    def __init__(self, velocity):
         super(Velocity, self).__init__()
-        self.vx = 0
-        self.vy = 0
+        self.vx = velocity[0]
+        self.vy = velocity[1]
+    def get_velocity(self):
+        return (self.vx, self.vy)

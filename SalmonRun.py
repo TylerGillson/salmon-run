@@ -18,7 +18,7 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 #    2 - SALMON
 #    3 - ENEMIES
 #    4 - HUD PANE
-#    5 - HUD ELEMENTS
+#    5 - HUD ELEMENTS (SCORE, SKULLS, ENERGY)
 #    6 - SHOW (HOME/GAMEOVER ON)
 
 class SalmonRun(game.Game):
@@ -29,7 +29,6 @@ class SalmonRun(game.Game):
         self.sp_gameover = self.factory.from_image(RESOURCES.get_path('gameover.bmp'))
         self.sp_background = self.factory.from_image(RESOURCES.get_path('background.bmp'))
         self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
-        self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon.bmp'))
         # Init HUD sprites:
         self.sp_energy = self.factory.from_color((0,255,0,0),(155,30))
         self.energy = sprite_classes.Inert(self.world, self.sp_energy,625,10)
@@ -40,17 +39,41 @@ class SalmonRun(game.Game):
         self.background = sprite_classes.Inert(self.world, self.sp_background, 0, 50)
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
 
-    def display_score(self):
+    def render_meals(self):
+        self.sp_skull = self.factory.from_image(RESOURCES.get_path('skull.bmp'))
+        self.skulls = [sprite_classes.Inert(self.world, self.sp_skull)] * self.salmon.meals.meals
+        x = 340
+        y = 15
+        for skull in self.skulls:
+            skull.setPos(x,y)
+            skull.setDepth(5)
+            x += 30
+
+    def render_score(self):
         self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font())
         self.score_obj = sprite_classes.Inert(self.world, self.sp_score,84,18)
         self.score_obj.setDepth(5)
         self.score += 1
 
-    def init_salmon(self):
-        self.salmon = sprite_classes.Player(self.world, self.sp_salmon, 400, 550)
+    def init_salmon(self, x, y, size=0, meals=0, velocity=(0,0), energy=155):
+        self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon' + str(size) + '.bmp'))
+        self.salmon = sprite_classes.Player(self.world, self.sp_salmon, x, y, size+1, meals, velocity, energy)
         self.salmon.setDepth(2)
         self.collision.salmon = self.salmon
         self.aicontroller.target = self.salmon
+
+    def grow_salmon(self):
+        x,y = self.salmon.sprite.position
+        size = self.salmon.size.size
+        meals = self.salmon.meals.meals
+        velocity = self.salmon.velocity.get_velocity()
+        energy = self.salmon.energy.energy
+        # Delete old salmon:
+        entity = self.world.get_entities(self.salmon.sprite)[0]
+        entity.delete()
+        # Init new salmon:
+        self.init_salmon(x,y,size-1,meals,velocity,energy)
+        globals.grow_salmon = False
 
     def render_home(self):
         self.homescreen.setDepth(6)
@@ -67,9 +90,11 @@ class SalmonRun(game.Game):
         self.world.process()
         sdl2.SDL_Delay(2000)
         self.gameover.setDepth(0)
+        globals.clear_meals = False
+        globals.grow_salmon = False
 
     def render_play(self):
-        self.init_salmon()
+        self.init_salmon(450,550)
         self.background.setDepth(1)
         self.dashboard.setDepth(4)
 
@@ -78,10 +103,9 @@ class SalmonRun(game.Game):
         x = random.randint(90,610)
         sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
         if tracking:
-            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, x, 0, True)
+            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, True)
         else:
-            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, x, 0, False)
-        self.enemy.velocity.vy = v
+            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, False)
         self.enemy.size.size = size
         self.enemy.setDepth(depth)
 
@@ -152,7 +176,8 @@ class SalmonRun(game.Game):
         self.render_home()                      # Render home screen
         globals.running = True
         while globals.running:                  # Begin event loop
-            self.display_score()
+            self.render_score()                 # Display the score
+            self.render_meals()                 # Display meals
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
@@ -163,6 +188,9 @@ class SalmonRun(game.Game):
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
+            # Grow salmon sprite every five meals:
+            if globals.grow_salmon:
+                self.grow_salmon()
             # Death process:
             if globals.death == True:
                 self.score = 0                  # Reset the score
