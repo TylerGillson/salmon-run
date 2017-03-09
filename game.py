@@ -1,6 +1,5 @@
 import sdl2.ext
 import time
-import sdl2.render
 # Custom Modules:
 import movement
 import collision
@@ -27,3 +26,5 @@ class Game(object):
         # Init time variables:
         self.start_t = time.time()
         self.old_t = 0
+        # Init score:
+        self.score = 0

@@ -7,6 +7,7 @@ import game
 import globals
 import sprite_classes
 import music
+import fonts
 
 # Create a resource container:
 RESOURCES = sdl2.ext.Resources(__file__, "resources")
@@ -16,8 +17,9 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 #    1 - BACKGROUND
 #    2 - SALMON
 #    3 - ENEMIES
-#    4 - HUD
-#    5 - SHOW (HOME/GAMEOVER ON)
+#    4 - HUD PANE
+#    5 - HUD ELEMENTS
+#    6 - SHOW (HOME/GAMEOVER ON)
 
 class SalmonRun(game.Game):
     def __init__(self, name, winx, winy):
@@ -28,19 +30,21 @@ class SalmonRun(game.Game):
         self.sp_background = self.factory.from_image(RESOURCES.get_path('background.bmp'))
         self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
         self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon.bmp'))
-        self.sp_energy = self.factory.from_color((0,255,0,0),(615,15,10,30))
-
+        # Init HUD sprites:
+        self.sp_energy = self.factory.from_color((0,255,0,0),(155,30))
+        self.energy = sprite_classes.Inert(self.world, self.sp_energy,625,10)
+        self.energy.setDepth(5)
         # Init sprite class instances: (except for the special salmon...)
         self.homescreen = sprite_classes.Inert(self.world, self.sp_homescreen, 0, 0)
         self.gameover = sprite_classes.Inert(self.world, self.sp_gameover, 0, 0)
         self.background = sprite_classes.Inert(self.world, self.sp_background, 0, 50)
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
 
-        self.energy = sprite_classes.Inert(self.world, self.sp_energy,615,15)
-        self.energy.setDepth(6)
-
-    def init_numbers(self):
-        self.zero = game.factory.from_image(RESOURCES.get_path('s_numbers.bmp'))
+    def display_score(self):
+        self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font())
+        self.score_obj = sprite_classes.Inert(self.world, self.sp_score,84,18)
+        self.score_obj.setDepth(5)
+        self.score += 1
 
     def init_salmon(self):
         self.salmon = sprite_classes.Player(self.world, self.sp_salmon, 400, 550)
@@ -49,7 +53,7 @@ class SalmonRun(game.Game):
         self.aicontroller.target = self.salmon
 
     def render_home(self):
-        self.homescreen.setDepth(5)
+        self.homescreen.setDepth(6)
         self.world.process()
         while globals.home_lock == True:                # Wait for user-input
             events = sdl2.ext.get_events()
@@ -59,7 +63,7 @@ class SalmonRun(game.Game):
         self.homescreen.setDepth(0)
 
     def render_game_over(self):
-        self.gameover.setDepth(5)
+        self.gameover.setDepth(6)
         self.world.process()
         sdl2.SDL_Delay(2000)
         self.gameover.setDepth(0)
@@ -148,6 +152,7 @@ class SalmonRun(game.Game):
         self.render_home()                      # Render home screen
         globals.running = True
         while globals.running:                  # Begin event loop
+            self.display_score()
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
@@ -160,6 +165,7 @@ class SalmonRun(game.Game):
                 self.handleEvent(event)
             # Death process:
             if globals.death == True:
+                self.score = 0                  # Reset the score
                 self.render_game_over()         # Render Game Over screen & delete sprites
                 globals.death = False
                 globals.home_lock = True

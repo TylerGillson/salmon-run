@@ -14,7 +14,7 @@ class Player(sdl2.ext.Entity):
         self.velocity = Velocity()
         self.size = Size(1)
         self.meals = Meals(0)
-        self.energy = Energy(100)
+        self.energy = Energy(155)
     def setDepth(self, depth):
         self.sprite.depth = depth
 
