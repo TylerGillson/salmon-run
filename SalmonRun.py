@@ -38,8 +38,6 @@ class SalmonRun(game.Game):
         self.background = sprite_classes.Inert(self.world, self.sp_background,0, 50)
         # Init enemy sizes array:
         self.esizes = [x for x in range(0,15)]
-        # Init energy bar:
-        self.render_energy(155)
 
     def render_meals(self):
         self.sp_skull = self.factory.from_image(RESOURCES.get_path('skull.bmp'))
@@ -106,9 +104,16 @@ class SalmonRun(game.Game):
         globals.clear_meals = False
         globals.grow_salmon = False
 
+    def init_energy_bar(self):
+        self.render_energy(155)
+        self.sp_energybar_border = self.factory.from_image(RESOURCES.get_path('energy_bar_border.bmp'))
+        self.energybar_border = sprite_classes.Inert(self.world, self.sp_energybar_border,623,8)
+        self.energybar_border.setDepth(5)
+
     def render_play(self):
         self.init_salmon(450,550)
         self.background.setDepth(1)
+        self.init_energy_bar()
         #......
         self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
         self.sp_riverbanks = self.factory.from_image(RESOURCES.get_path('riverbanks2.bmp'))
@@ -154,9 +159,14 @@ class SalmonRun(game.Game):
     def decrement_energy(self):
         self.salmon.energy.energy -= 5
 
-    def render_energy(self,w,): #Main
-        self.sp_energy = self.factory.from_color((0,255,0,0),(w,30))
-        # Yellow r 237 g 239 b0 Red 255 g0 b0
+    def render_energy(self,w,):
+        if self.salmon.energy.energy > 103:
+            color = (0,255,0,0)
+        elif self.salmon.energy.energy > 51:
+            color = (237,239,0,0)
+        else:
+            color = (255,0,0,0)
+        self.sp_energy = self.factory.from_color(color,(w,30))
         self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
         self.energy_bar.setDepth(5)
 
