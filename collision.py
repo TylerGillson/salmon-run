@@ -59,8 +59,8 @@ class CollisionSystem(sdl2.ext.Applicator):
                     entity = world.get_entities(sprite)[0]
                     entity.delete()                 # Delete eaten enemy
                     self.salmon.meals.eat()         # Increment meals counter
+                    self.salmon.energy.boost(20)    # Boost salmon energy
                     globals.clear_meals = False
-                    #print(self.salmon.meals.meals, self.salmon.size.size)
                     if self.salmon.meals.meals == 5:
                         self.salmon.meals.reset()
                         self.salmon.size.increment()

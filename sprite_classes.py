@@ -21,17 +21,16 @@ class Player(sdl2.ext.Entity):
         self.sprite.depth = depth
 
 class PlayerData(object):
-    def __init__(self):
+    def __init__(self, ai):
         super(PlayerData, self).__init__()
-        self.ai = False
+        self.ai = ai
 
 class Enemy(sdl2.ext.Entity):
     def __init__(self, world, sprite, velocity, posx=0, posy=0, ai=False):
         self.sprite = sprite
         self.sprite.position = posx, posy
         self.velocity = Velocity(velocity)
-        self.playerdata = PlayerData()
-        self.playerdata.ai = ai
+        self.playerdata = PlayerData(ai)
         self.size = Size()
     def setDepth(self, depth):
         self.sprite.depth = depth

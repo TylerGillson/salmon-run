@@ -11,4 +11,6 @@ def make_font(font_type):
         font = sdl2.ext.font.FontManager(RESOURCES.get_path('PixelGameFont.ttf'),size=100,color=(255,100,148))
     elif font_type == 'Play':
         font = sdl2.ext.font.FontManager(RESOURCES.get_path('PixelGameFont.ttf'),size=50,color=(255,100,148))
+    elif font_type == 'GameOver':
+        font = sdl2.ext.font.FontManager(RESOURCES.get_path('PixelGameFont.ttf'),size=100,color=(0,0,0))
     return font

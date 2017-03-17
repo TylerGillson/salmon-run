@@ -14,7 +14,7 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 
 # Z-LAYERING DEPTHS:
 #    0 - HIDE (HOME/GAMEOVER OFF)
-#    1 - BACKGROUND
+#    1 - RIVER, RIVERBANKS
 #    2 - SALMON
 #    3 - ENEMIES
 #    4 - HUD PANE
@@ -25,19 +25,21 @@ class SalmonRun(game.Game):
     def __init__(self, name, winx, winy):
         super(SalmonRun, self).__init__(name, winx, winy)
         # Init sprites:
-        self.sp_homescreen = self.factory.from_image(RESOURCES.get_path('homescreen.bmp'))
-        self.sp_gameover = self.factory.from_image(RESOURCES.get_path('gameover.bmp'))
-        self.sp_background = self.factory.from_image(RESOURCES.get_path('background.bmp'))
+        self.sp_blank = self.factory.from_image(RESOURCES.get_path('blank.bmp'))
         self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
+        self.sp_background = self.factory.from_image(RESOURCES.get_path('river.bmp'))
         # Init HUD sprites:
         self.sp_energy = self.factory.from_color((0,255,0,0),(155,30))
         self.energy = sprite_classes.Inert(self.world, self.sp_energy,625,10)
         self.energy.setDepth(5)
         # Init sprite class instances: (except for the special salmon...)
-        self.homescreen = sprite_classes.Inert(self.world, self.sp_homescreen, 0, 0)
-        self.gameover = sprite_classes.Inert(self.world, self.sp_gameover, 0, 0)
-        self.background = sprite_classes.Inert(self.world, self.sp_background, 0, 50)
+        self.blank = sprite_classes.Inert(self.world, self.sp_blank, 0, 0)
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
+        self.background = sprite_classes.Inert(self.world, self.sp_background,0, 50)
+        # Init enemy sizes array:
+        self.esizes = [x for x in range(0,15)]
+        # Init energy bar:
+        self.render_energy(155)
 
     def render_meals(self):
         self.sp_skull = self.factory.from_image(RESOURCES.get_path('skull.bmp'))
@@ -60,6 +62,7 @@ class SalmonRun(game.Game):
         self.salmon = sprite_classes.Player(self.world, self.sp_salmon, x, y, size+1, meals, velocity, energy)
         self.salmon.setDepth(2)
         self.collision.salmon = self.salmon
+        self.movement.salmon = self.salmon
         self.aicontroller.target = self.salmon
 
     def grow_salmon(self):
@@ -69,11 +72,9 @@ class SalmonRun(game.Game):
             meals = self.salmon.meals.meals
             velocity = self.salmon.velocity.get_velocity()
             energy = self.salmon.energy.energy
-            # Delete old salmon:
-            entity = self.world.get_entities(self.salmon.sprite)[0]
+            entity = self.world.get_entities(self.salmon.sprite)[0] # Delete old salmon:
             entity.delete()
-            # Init new salmon:
-            self.init_salmon(x,y,size-1,meals,velocity,energy)
+            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon:
             globals.grow_salmon = False
 
     def render_home(self):
@@ -83,20 +84,24 @@ class SalmonRun(game.Game):
         self.sp_play = self.factory.from_text('PRESS "P" TO PLAY',fontmanager=fonts.make_font('Play'))
         self.play = sprite_classes.Inert(self.world, self.sp_play,150,330)
         self.play.setDepth(7)
-        self.homescreen.setDepth(6)
+        self.blank.setDepth(6)
         while globals.home_lock == True:                # Wait for user-input
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
             self.world.process()
-        self.homescreen.setDepth(0)
+        self.blank.setDepth(0)
         self.title.setDepth(0)
         self.play.setDepth(0)
 
     def render_game_over(self):
-        self.gameover.setDepth(6)
+        self.sp_gameover = self.factory.from_text('GAME OVER',fontmanager=fonts.make_font('GameOver'))
+        self.gameover = sprite_classes.Inert(self.world, self.sp_gameover,112,200)
+        self.gameover.setDepth(7)
+        self.blank.setDepth(6)
         self.world.process()
         sdl2.SDL_Delay(2000)
+        self.blank.setDepth(0)
         self.gameover.setDepth(0)
         globals.clear_meals = False
         globals.grow_salmon = False
@@ -104,50 +109,56 @@ class SalmonRun(game.Game):
     def render_play(self):
         self.init_salmon(450,550)
         self.background.setDepth(1)
+        #......
+        self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
+        self.sp_riverbanks = self.factory.from_image(RESOURCES.get_path('riverbanks2.bmp'))
+        self.river = sprite_classes.Inert(self.world, self.sp_river, 0, 50)
+        self.riverbanks = sprite_classes.Enemy(self.world, self.sp_riverbanks, (0,1), 0, -550, False)
+        self.river.setDepth(1)
+        self.riverbanks.setDepth(2)     # If this is less than 2 everything crashes on death!!!
         self.dashboard.setDepth(4)
+        self.world.process()
 
-    def spawn(self, path, size, depth, tracking):
+    def spawn(self, path, size, depth, ai_flag):
         v = random.randint(1,10)
         x = random.randint(90,610)
         sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
-        if tracking:
-            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, True)
-        else:
-            self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, False)
+        self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, ai_flag)
         self.enemy.size.size = size
         self.enemy.setDepth(depth)
 
-    def manage_spawn(self, delta_t, ai_flag):
-        if delta_t % 1 == 0:
-            self.spawn('enemy0.bmp', 0, 3, ai_flag)
-        if delta_t % 2 == 0:
-            self.spawn('enemy1.bmp', 1, 3, ai_flag)
-        if delta_t % 3 == 0:
-            self.spawn('enemy2.bmp', 2, 3, ai_flag)
-        if delta_t % 4 == 0:
-            self.spawn('enemy3.bmp', 3, 3, ai_flag)
-        if delta_t % 5 == 0:
-            self.spawn('enemy4.bmp', 4, 3, ai_flag)
-        if delta_t % 8 == 0:
-            self.spawn('enemy5.bmp', 5, 3, ai_flag)
-        if delta_t % 10 == 0:
-            self.spawn('enemy6.bmp', 6, 3, ai_flag)
-        if delta_t % 12 == 0:
-            self.spawn('enemy7.bmp', 7, 3, ai_flag)
-        if delta_t % 14 == 0:
-            self.spawn('enemy8.bmp', 8, 3, ai_flag)
-        if delta_t % 16 == 0:
-            self.spawn('enemy9.bmp', 9, 3, ai_flag)
-        if delta_t % 18 == 0:
-            self.spawn('enemy10.bmp', 10, 3, ai_flag)
-        if delta_t % 20 == 0:
-            self.spawn('enemy11.bmp', 11, 3, ai_flag)
-        if delta_t % 22 == 0:
-            self.spawn('enemy12.bmp', 12, 3, ai_flag)
-        if delta_t % 24 == 0:
-            self.spawn('enemy13.bmp', 13, 3, ai_flag)
-        if delta_t % 26 == 0:
-            self.spawn('enemy14.bmp', 14, 3, ai_flag)
+    def manage_spawn(self, delta_t):
+        num = random.randint(1,3)                   # Give 1/3 of enemies ai
+        ai_flag = True if num == 1 else False
+        esize_lbound = self.salmon.size.size - 2 if self.salmon.size.size - 2 > 0 else 0
+        esize_ubound = self.salmon.size.size + 3 if self.salmon.size.size + 3 <= 14 else 14
+        esize_index = random.randint(esize_lbound,esize_ubound)
+        esize = self.esizes[esize_index]
+        if esize < self.salmon.size.size:
+            ai_flag = False
+        enemy_str = 'enemy' + str(esize) + '.bmp'
+        self.spawn(enemy_str, esize, 3, ai_flag)
+
+    def spawn_tree(self,side):
+        if side == 'left':
+            xL = random.randint(5,70)
+            sp_treeL = self.factory.from_image(RESOURCES.get_path('tree.bmp'))
+            self.treeL = sprite_classes.Enemy(self.world, sp_treeL, (0,1), xL, 50, False)
+            self.treeL.setDepth(3)
+        elif side == 'right':
+            xR = random.randint(715,775)
+            sp_treeR = self.factory.from_image(RESOURCES.get_path('tree.bmp'))
+            self.treeR = sprite_classes.Enemy(self.world, sp_treeR, (0,1), xR, 70, False)
+            self.treeR.setDepth(3)
+
+    def decrement_energy(self):
+        self.salmon.energy.energy -= 5
+
+    def render_energy(self,w,): #Main
+        self.sp_energy = self.factory.from_color((0,255,0,0),(w,30))
+        # Yellow r 237 g 239 b0 Red 255 g0 b0
+        self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
+        self.energy_bar.setDepth(5)
 
     def handleEvent(self, event):
         # Handle home screen events:
@@ -180,7 +191,7 @@ class SalmonRun(game.Game):
                     self.salmon.velocity.vy -= 1
 
     def run(self):
-        music.play_music()                      # Play background music
+        #music.play_music()                      # Play background music
         self.render_home()                      # Render home screen
         globals.running = True
         while globals.running:                  # Begin event loop
@@ -189,9 +200,12 @@ class SalmonRun(game.Game):
             delta_t = int(time.time()-self.start_t)
             # Spawn Enemies:
             if delta_t != self.old_t:
-                num = random.randint(1,6)       # Give 1/6 of enemies ai
-                ai_flag = True if num == 1 else False
-                self.manage_spawn(delta_t, ai_flag)  # Spawn enemies
+                self.manage_spawn(delta_t)      # Spawn enemies
+                self.decrement_energy()
+                if self.old_t % 3 == 0:
+                    self.spawn_tree('left')
+                elif self.old_t % 3 == 1:
+                    self.spawn_tree('right')
             # Process SDL events:
             events = sdl2.ext.get_events()
             for event in events:
@@ -206,9 +220,10 @@ class SalmonRun(game.Game):
                 globals.death = False
                 globals.home_lock = True
                 self.render_home()              # Render home screen
-            sdl2.SDL_Delay(10)
             self.old_t = delta_t
+            sdl2.SDL_Delay(15)
             self.world.process()
+            self.render_energy(self.salmon.energy.energy)
         sdl2.ext.quit()
         return 0
 

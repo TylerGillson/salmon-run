@@ -12,9 +12,20 @@ class MovementSystem(sdl2.ext.Applicator):
         self.miny = miny
         self.maxx = maxx
         self.maxy = maxy
+        self.salmon = None
 
     def process(self, world, componentsets):
         for velocity, sprite in componentsets:
+            # Reset riverbanks:
+            if sprite.x < 90 and (sprite.area[2]-sprite.area[0] > 50):
+                if sprite.y > 0:
+                    sprite.y = -550
+                sprite.y += -self.salmon.velocity.vy if self.salmon.velocity.vy < 0 else 0
+                continue
+            # Have trees track upwards salmon velocity:
+            if sprite.x < 90 or sprite.x > 710:
+                sprite.y += -self.salmon.velocity.vy if self.salmon.velocity.vy < 0 else 0
+                continue
             swidth, sheight = sprite.size
             sprite.x += velocity.vx
             sprite.y += velocity.vy
@@ -38,6 +49,8 @@ class TrackingAIController(sdl2.ext.Applicator):
     def process(self, world, componentsets):
         for pdata, vel, sprite in componentsets:
             if not pdata.ai:        # Enemies with AI track salmon in x-axis
+                continue
+            if sprite.depth != 3:
                 continue
             # Calc homing sprite axis centres:
             centerx = sprite.x + sprite.size[0] // 2

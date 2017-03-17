@@ -3,7 +3,7 @@ import time
 # Custom Modules:
 import movement
 import collision
-import renderers
+import renderer
 
 class Game(object):
     def __init__(self, name, winx=800, winy=600):
@@ -13,9 +13,9 @@ class Game(object):
         self.factory = sdl2.ext.SpriteFactory(sdl2.ext.SOFTWARE)
         self.world = sdl2.ext.World()
         # Init systems:
-        self.movement = movement.MovementSystem(90, 50, 710, winy) # Movement area hard-coded
+        self.movement = movement.MovementSystem(110, 50, 670, winy) # Movement area hard-coded
         self.collision = collision.CollisionSystem(0, 0, winx, winy)
-        self.spriterenderer = renderers.SoftwareRenderer(self.window)
+        self.spriterenderer = renderer.SoftwareRenderer(self.window)
         self.aicontroller = movement.TrackingAIController(0, winy)
         # Build world & show window:
         self.world.add_system(self.spriterenderer)
