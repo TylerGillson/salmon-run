@@ -27,7 +27,6 @@ class SalmonRun(game.Game):
         # Init sprites:
         self.sp_blank = self.factory.from_image(RESOURCES.get_path('blank.bmp'))
         self.sp_dashboard = self.factory.from_image(RESOURCES.get_path('dashboard.bmp'))
-        self.sp_background = self.factory.from_image(RESOURCES.get_path('river.bmp'))
         # Init HUD sprites:
         self.sp_energy = self.factory.from_color((0,255,0,0),(155,30))
         self.energy = sprite_classes.Inert(self.world, self.sp_energy,625,10)
@@ -35,7 +34,6 @@ class SalmonRun(game.Game):
         # Init sprite class instances: (except for the special salmon...)
         self.blank = sprite_classes.Inert(self.world, self.sp_blank, 0, 0)
         self.dashboard = sprite_classes.Inert(self.world, self.sp_dashboard,0, 0)
-        self.background = sprite_classes.Inert(self.world, self.sp_background,0, 50)
         # Init enemy sizes array:
         self.esizes = [x for x in range(0,15)]
 
@@ -112,14 +110,13 @@ class SalmonRun(game.Game):
 
     def render_play(self):
         self.init_salmon(450,550)
-        self.background.setDepth(1)
         self.init_energy_bar()
-        #......
+        # Init river & riverbanks then bring up the HUD:
         self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
-        self.sp_riverbanks = self.factory.from_image(RESOURCES.get_path('riverbanks2.bmp'))
         self.river = sprite_classes.Inert(self.world, self.sp_river, 0, 50)
-        self.riverbanks = sprite_classes.Enemy(self.world, self.sp_riverbanks, (0,1), 0, -550, False)
         self.river.setDepth(1)
+        self.sp_riverbanks = self.factory.from_image(RESOURCES.get_path('riverbanks2.bmp'))
+        self.riverbanks = sprite_classes.Enemy(self.world, self.sp_riverbanks, (0,1), 0, -550, False)
         self.riverbanks.setDepth(2)     # If this is less than 2 everything crashes on death!!!
         self.dashboard.setDepth(4)
         self.world.process()
@@ -158,14 +155,18 @@ class SalmonRun(game.Game):
 
     def decrement_energy(self):
         self.salmon.energy.energy -= 5
+        if self.salmon.energy.energy <= 0:
+            globals.death = True
 
-    def render_energy(self,w,):
+    def render_energy(self,w):
         if self.salmon.energy.energy > 103:
             color = (0,255,0,0)
         elif self.salmon.energy.energy > 51:
             color = (237,239,0,0)
         else:
             color = (255,0,0,0)
+        if w > 155:
+            w = 155
         self.sp_energy = self.factory.from_color(color,(w,30))
         self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
         self.energy_bar.setDepth(5)

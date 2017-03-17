@@ -32,7 +32,7 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
                     entity = world.get_entities(sprite)[0]
                     entity.delete()
                 if globals.clear_meals == True:
-                    if sprite.x!=625 and sprite.x!=84:
+                    if sprite.x not in [84,623,625]:
                         entity = world.get_entities(sprite)[0]
                         entity.delete()
             # Delete enemy sprites that have reached the bottom from the world:
