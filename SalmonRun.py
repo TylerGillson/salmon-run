@@ -74,6 +74,7 @@ class SalmonRun(game.Game):
             globals.grow_salmon = False
 
     def render_home(self):
+        music.play_sample('Bubbles.wav', True)
         self.sp_title = self.factory.from_text('SALMON RUN',fontmanager=fonts.make_font('Title'))
         self.title = sprite_classes.Inert(self.world, self.sp_title,66,110)
         self.title.setDepth(7)
@@ -109,6 +110,8 @@ class SalmonRun(game.Game):
         self.energybar_border.setDepth(5)
 
     def render_play(self):
+        music.play_music('Chiptune.wav',-1)     # Play background music
+        music.play_sample('Bubbles.wav', True)
         self.init_salmon(450,550)
         self.init_energy_bar()
         # Init river & riverbanks then bring up the HUD:
@@ -202,7 +205,7 @@ class SalmonRun(game.Game):
                     self.salmon.velocity.vy -= 1
 
     def run(self):
-        #music.play_music()                      # Play background music
+        music.init_audio()
         self.render_home()                      # Render home screen
         globals.running = True
         while globals.running:                  # Begin event loop

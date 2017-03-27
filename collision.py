@@ -1,6 +1,7 @@
 import sdl2.ext
 # Custom Modules:
 import sprite_classes
+import music
 import globals
 
 class CollisionSystem(sdl2.ext.Applicator):
@@ -60,6 +61,7 @@ class CollisionSystem(sdl2.ext.Applicator):
                     entity.delete()                 # Delete eaten enemy
                     self.salmon.meals.eat()         # Increment meals counter
                     self.salmon.energy.boost(20)    # Boost salmon energy
+                    music.play_sample('Bite.wav')
                     globals.clear_meals = False
                     if self.salmon.meals.meals == 5:
                         self.salmon.meals.reset()
@@ -67,4 +69,6 @@ class CollisionSystem(sdl2.ext.Applicator):
                         globals.grow_salmon = True
                         globals.clear_meals = True
                 else:
+                    music.play_sample('SplitSplat.wav')
+                    music.kill()
                     globals.death = True
