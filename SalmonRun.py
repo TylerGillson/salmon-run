@@ -16,7 +16,7 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 #    0 - HIDE (HOME/GAMEOVER OFF)
 #    1 - RIVER, RIVERBANKS
 #    2 - SALMON
-#    3 - ENEMIES
+#    3 - ENEMIES, TREES
 #    4 - HUD PANE
 #    5 - HUD ELEMENTS (SCORE, SKULLS, ENERGY)
 #    6 - SHOW (HOME/GAMEOVER ON)
@@ -133,11 +133,14 @@ class SalmonRun(game.Game):
         self.enemy.setDepth(depth)
 
     def manage_spawn(self, delta_t):
-        num = random.randint(1,3)                   # Give 1/3 of enemies ai
-        ai_flag = True if num == 1 else False
+        num = random.randint(1,3)
+        ai_flag = True if num == 1 else False       # Give 1/3 of enemies ai
         esize_lbound = self.salmon.size.size - 2 if self.salmon.size.size - 2 > 0 else 0
         esize_ubound = self.salmon.size.size + 3 if self.salmon.size.size + 3 <= 14 else 14
-        esize_index = random.randint(esize_lbound,esize_ubound)
+        if self.salmon.energy.energy < 52:          # If energy in red zone, spawn smaller enemies
+            esize_index = random.randint(esize_lbound,esize_ubound-1)
+        else:
+            esize_index = random.randint(esize_lbound,esize_ubound)
         esize = self.esizes[esize_index]
         if esize < self.salmon.size.size:
             ai_flag = False
@@ -156,8 +159,15 @@ class SalmonRun(game.Game):
             self.treeR = sprite_classes.Enemy(self.world, sp_treeR, (0,1), xR, 70, False)
             self.treeR.setDepth(3)
 
+    def spawn_rock(self):
+        x = random.randint(90,610)
+        sp_rock = self.factory.from_image(RESOURCES.get_path('small_rock.bmp'))
+        self.rock = sprite_classes.Enemy(self.world, sp_rock, (0,1), x, 50, False)
+        self.rock.setDepth(3)
+        self.rock.size.size = 99
+
     def decrement_energy(self):
-        self.salmon.energy.energy -= 5
+        self.salmon.energy.energy -= 4
         if self.salmon.energy.energy <= 0:
             globals.death = True
 
@@ -217,9 +227,13 @@ class SalmonRun(game.Game):
                 self.manage_spawn(delta_t)      # Spawn enemies
                 self.decrement_energy()
                 if self.old_t % 3 == 0:
-                    self.spawn_tree('left')
+                    if self.salmon.velocity.vy < 0:
+                        self.spawn_tree('left')
                 elif self.old_t % 3 == 1:
-                    self.spawn_tree('right')
+                    if self.salmon.velocity.vy < 0:
+                        self.spawn_tree('right')
+                elif self.old_t % 4 == 0:
+                    self.spawn_rock()
             # Process SDL events:
             events = sdl2.ext.get_events()
             for event in events:

@@ -20,11 +20,11 @@ class MovementSystem(sdl2.ext.Applicator):
             if sprite.x < 90 and (sprite.area[2]-sprite.area[0] > 50):
                 if sprite.y > 0:
                     sprite.y = -550
-                sprite.y += -self.salmon.velocity.vy if self.salmon.velocity.vy < 0 else 0
+                sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
                 continue
             # Have trees track upwards salmon velocity:
             if sprite.x < 90 or sprite.x > 710:
-                sprite.y += -self.salmon.velocity.vy if self.salmon.velocity.vy < 0 else 0
+                sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
                 continue
             swidth, sheight = sprite.size
             sprite.x += velocity.vx

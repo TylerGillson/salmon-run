@@ -35,6 +35,12 @@ class CollisionSystem(sdl2.ext.Applicator):
             y2 = min(bottom,s_bottom)
             w = x2 - x1
             h = y2 - y1
+            # Calculate screen-to-sprite offsets:
+            eox = x1-left if x1 > left else 0       # enemy sprite x
+            sox = x1-s_left if x1 > s_left else 0   # salmon sprite x
+            eoy = y1-top if y1 > top else 0         # enemy sprite y
+            soy = y1-s_top if y1 > s_top else 0     # salmon sprite y
+
             # Pixel Perfect Collision:
             x=0
             y=0
@@ -42,10 +48,9 @@ class CollisionSystem(sdl2.ext.Applicator):
             salmon_pix = sdl2.ext.PixelView(self.salmon.sprite)
             while y < h:
                 while x < w:
-                    if sprite_pix[y][x] != 0 and salmon_pix[y][x] != 0:
-                    #print(sprite_pix[y][x])
-                    #print(salmon_pix[y][x])
+                    if sprite_pix[y+eoy][x+eox] != 0 and salmon_pix[y+soy][x+sox] != 0:
                         coll = True
+                        break
                     x += 1
                 y += 1
         return coll

@@ -19,7 +19,7 @@ def play_sample(filepath, quiet=False):
     sample = sdl2.sdlmixer.Mix_LoadWAV(byteify(sample_file, "utf-8"))
     if quiet:
         channel = sdl2.sdlmixer.Mix_PlayChannel(2, sample, -1)
-        sdl2.sdlmixer.Mix_Volume(2,5)
+        sdl2.sdlmixer.Mix_Volume(2,5)   # channel, volume:(0,128)
     else:
         channel = sdl2.sdlmixer.Mix_PlayChannel(1, sample, 0)
 
