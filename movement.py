@@ -18,12 +18,16 @@ class MovementSystem(sdl2.ext.Applicator):
         for velocity, sprite in componentsets:
             # Reset riverbanks:
             if sprite.x < 90 and (sprite.area[2]-sprite.area[0] > 50):
-                if sprite.y > 0:
-                    sprite.y = -550
+                if sprite.y >= 650:
+                    sprite.y = sprite.y - 1200
                 sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
                 continue
             # Have trees track upwards salmon velocity:
             if sprite.x < 90 or sprite.x > 710:
+                sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
+                continue
+            # Have rocks and whirlpools track upwards salmon velocity:
+            if (sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) in [1628, 2450]:
                 sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
                 continue
             swidth, sheight = sprite.size

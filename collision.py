@@ -1,4 +1,5 @@
 import sdl2.ext
+import random
 # Custom Modules:
 import sprite_classes
 import music
@@ -36,10 +37,10 @@ class CollisionSystem(sdl2.ext.Applicator):
             w = x2 - x1
             h = y2 - y1
             # Calculate screen-to-sprite offsets:
-            eox = x1-left if x1 > left else 0       # enemy sprite x
-            sox = x1-s_left if x1 > s_left else 0   # salmon sprite x
-            eoy = y1-top if y1 > top else 0         # enemy sprite y
-            soy = y1-s_top if y1 > s_top else 0     # salmon sprite y
+            eox = x1-left if x1 > left else left-x1         # x pixel offset into enemy sprite bitmap
+            sox = x1-s_left if x1 > s_left else s_left-x1   # x pixel offset into salmon sprite bitmap
+            eoy = y1-top if y1 > top else top-y1            # y pixel offset into enemy sprite bitmap
+            soy = y1-s_top if y1 > s_top else s_top-y1      # y pixel offset into salmon sprite bitmap
 
             # Pixel Perfect Collision:
             x=0
@@ -74,6 +75,11 @@ class CollisionSystem(sdl2.ext.Applicator):
                         globals.grow_salmon = True
                         globals.clear_meals = True
                 else:
-                    music.play_sample('SplitSplat.wav')
-                    music.kill()
-                    globals.death = True
+                    # Whirlpool collision:
+                    if size.size == 50:
+                        self.salmon.velocity.vy = random.randint(-30,30)
+                        self.salmon.velocity.vx = random.randint(-30,30)
+                    else:
+                        music.play_sample('SplitSplat.wav')
+                        music.kill()
+                        globals.death = True

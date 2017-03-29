@@ -12,7 +12,7 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
         # Game Over Rendering:
         if globals.death == True:
             # Render everyhing except player and enemy sprites:
-            valid = [sprite for sprite in components if sprite.depth not in [2,3,5]]
+            valid = [sprite for sprite in components if sprite.depth not in [1,2,3,5]]
             # Delete all player and enemy sprites:
             delete = set(components) - set(valid)
             self.render(sorted(valid, key=self._sortfunc))

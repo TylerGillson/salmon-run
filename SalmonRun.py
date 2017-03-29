@@ -20,6 +20,7 @@ RESOURCES = sdl2.ext.Resources(__file__, "resources")
 #    4 - HUD PANE
 #    5 - HUD ELEMENTS (SCORE, SKULLS, ENERGY)
 #    6 - SHOW (HOME/GAMEOVER ON)
+#    7 - HOME/GAMEOVER TTF'S
 
 class SalmonRun(game.Game):
     def __init__(self, name, winx, winy):
@@ -118,9 +119,12 @@ class SalmonRun(game.Game):
         self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
         self.river = sprite_classes.Inert(self.world, self.sp_river, 0, 50)
         self.river.setDepth(1)
-        self.sp_riverbanks = self.factory.from_image(RESOURCES.get_path('riverbanks2.bmp'))
-        self.riverbanks = sprite_classes.Enemy(self.world, self.sp_riverbanks, (0,1), 0, -550, False)
-        self.riverbanks.setDepth(2)     # If this is less than 2 everything crashes on death!!!
+        self.sp_river_top = self.factory.from_image(RESOURCES.get_path('top.bmp'))
+        self.sp_river_bottom = self.factory.from_image(RESOURCES.get_path('bottom.bmp'))
+        self.river_top = sprite_classes.Enemy(self.world, self.sp_river_top, (0,1), 0, -550, False)
+        self.river_bottom = sprite_classes.Enemy(self.world, self.sp_river_bottom, (0,1), 0, 50, False)
+        self.river_top.setDepth(2)
+        self.river_bottom.setDepth(2)
         self.dashboard.setDepth(4)
         self.world.process()
 
@@ -165,6 +169,13 @@ class SalmonRun(game.Game):
         self.rock = sprite_classes.Enemy(self.world, sp_rock, (0,1), x, 50, False)
         self.rock.setDepth(3)
         self.rock.size.size = 99
+
+    def spawn_whirlpool(self):
+        x = random.randint(90,610)
+        sp_whirlpool = self.factory.from_image(RESOURCES.get_path('whirlpool.bmp'))
+        self.whirlpool = sprite_classes.Enemy(self.world, sp_whirlpool, (0,1), x, 50, False)
+        self.whirlpool.setDepth(3)
+        self.whirlpool.size.size = 50
 
     def decrement_energy(self):
         self.salmon.energy.energy -= 4
@@ -232,8 +243,10 @@ class SalmonRun(game.Game):
                 elif self.old_t % 3 == 1:
                     if self.salmon.velocity.vy < 0:
                         self.spawn_tree('right')
-                elif self.old_t % 4 == 0:
+                elif self.old_t % 4 == 0:       # Spawn rocks
                     self.spawn_rock()
+                if self.old_t % 12 == 0:        # Spawn whirlpools
+                    self.spawn_whirlpool()
             # Process SDL events:
             events = sdl2.ext.get_events()
             for event in events:
