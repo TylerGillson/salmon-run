@@ -30,6 +30,10 @@ class MovementSystem(sdl2.ext.Applicator):
             if (sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) in [1628, 2450]:
                 sprite.y += -int(self.salmon.velocity.vy*(3/4)) if self.salmon.velocity.vy < 0 else 0
                 continue
+            # Slow down enemies launched by whirlpools:
+            if velocity.vy > 10:
+                velocity.vy -= 2
+
             swidth, sheight = sprite.size
             sprite.x += velocity.vx
             sprite.y += velocity.vy

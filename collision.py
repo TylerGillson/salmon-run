@@ -1,5 +1,6 @@
 import sdl2.ext
 import random
+import copy
 # Custom Modules:
 import sprite_classes
 import music
@@ -56,10 +57,39 @@ class CollisionSystem(sdl2.ext.Applicator):
                 y += 1
         return coll
 
+    def _enemy_obstacle_overlap(self, item, obstacles):
+        size, pos, sprite = item
+
+        if sprite.depth != 3 or ((sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) in [1628,2450]):
+            return (False, None)
+
+        left, top, right, bottom = sprite.area
+        coll = False
+        o_type = None
+
+        for obstacle in obstacles:
+            o_type = 'rock' if (obstacle[2]-obstacle[0]) * (obstacle[3]-obstacle[1]) == 1628 else 'whirlpool'
+            o_left, o_top, o_right, o_bottom = obstacle
+            coll = o_left < right and o_right > left and o_top < bottom and o_bottom > top
+            if coll:
+                break
+        return coll, o_type
+
     def process(self, world, componentsets):
         # During game play, check for sprite collisions:
         if globals.death == False and globals.home_lock == False:
-            collitems = [comp for comp in componentsets if self._overlap(comp)]
+            comp_list = [comp for comp in componentsets]
+            collitems = [comp for comp in comp_list if self._overlap(comp)]
+            obstacles = [comp[2].area for comp in comp_list if
+                (comp[2].area[2]-comp[2].area[0]) * (comp[2].area[3]-comp[2].area[1]) in [1628,2450]]
+
+            # Determine enemy-obstacle collisions:
+            enemies_on_obstacles = []
+            for comp in comp_list:
+                coll, o_type = self._enemy_obstacle_overlap(comp, obstacles)
+                if coll:
+                    enemies_on_obstacles.append((comp,o_type))
+
             if collitems:
                 size, pos, sprite = collitems[0]
                 if self.salmon.size.size > size.size:
@@ -83,3 +113,12 @@ class CollisionSystem(sdl2.ext.Applicator):
                         music.play_sample('SplitSplat.wav')
                         music.kill()
                         globals.death = True
+
+            if enemies_on_obstacles:
+                for enemy in enemies_on_obstacles:
+                    if enemy[1] == 'rock':
+                        entity = world.get_entities(enemy[0][2])[0]
+                        entity.delete()
+                    elif enemy[1] == 'whirlpool':
+                        enemy[0][1].vx = random.randint(-30,30)
+                        enemy[0][1].vy = random.randint(0,30)
