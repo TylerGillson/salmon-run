@@ -6,3 +6,4 @@ home_lock = True # home_lock makes world.process() safe when rendering the home 
                  # It prevents certain inputs from crashing the game by attempting to influence sprites that do not currently exist.
 clear_meals = False
 grow_salmon = False
+game_over_lock = False

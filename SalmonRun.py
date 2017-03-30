@@ -93,50 +93,55 @@ class SalmonRun(game.Game):
         self.play.setDepth(0)
 
     def render_game_over(self):
+        self.blank.setDepth(6)
         self.sp_gameover = self.factory.from_text('GAME OVER',fontmanager=fonts.make_font('GameOver'))
         self.gameover = sprite_classes.Inert(self.world, self.sp_gameover,112,110)
         self.gameover.setDepth(7)
         # Print scores to screen:
         self.sp_your_score = self.factory.from_text('Your Score: '+str(self.score),fontmanager=fonts.make_font('GameOverScore'))
-        self.your_score = sprite_classes.Inert(self.world, self.sp_your_score,250,240)
+        self.your_score = sprite_classes.Inert(self.world, self.sp_your_score,300,240)
         self.your_score.setDepth(7)
         self.sp_top_scores = self.factory.from_text('Top Scores:',fontmanager=fonts.make_font('GameOverScore'))
-        self.top_scores = sprite_classes.Inert(self.world, self.sp_top_scores,250,300)
+        self.top_scores = sprite_classes.Inert(self.world, self.sp_top_scores,300,300)
         self.top_scores.setDepth(7)
         top_scores_f = open('top_scores.txt', 'r')
         top_scores = top_scores_f.readlines()
         to_print = len(top_scores)
         while True:
             self.sp_a_score = self.factory.from_text('1: '+top_scores[0][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_1 = sprite_classes.Inert(self.world, self.sp_a_score,300,360)
+            self.score_1 = sprite_classes.Inert(self.world, self.sp_a_score,350,360)
             self.score_1.setDepth(7)
             if to_print == 1:
                 break
             self.sp_a_score = self.factory.from_text('2: '+top_scores[1][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_2 = sprite_classes.Inert(self.world, self.sp_a_score,300,410)
+            self.score_2 = sprite_classes.Inert(self.world, self.sp_a_score,350,400)
             self.score_2.setDepth(7)
             if to_print == 2:
                 break
             self.sp_a_score = self.factory.from_text('3: '+top_scores[2][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_3 = sprite_classes.Inert(self.world, self.sp_a_score,300,460)
+            self.score_3 = sprite_classes.Inert(self.world, self.sp_a_score,350,440)
             self.score_3.setDepth(7)
             if to_print == 3:
                 break
             self.sp_a_score = self.factory.from_text('4: '+top_scores[3][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_4 = sprite_classes.Inert(self.world, self.sp_a_score,300,510)
+            self.score_4 = sprite_classes.Inert(self.world, self.sp_a_score,350,480)
             self.score_4.setDepth(7)
             if to_print == 4:
                 break
             self.sp_a_score = self.factory.from_text('5: '+top_scores[4][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_5 = sprite_classes.Inert(self.world, self.sp_a_score,300,560)
+            self.score_5 = sprite_classes.Inert(self.world, self.sp_a_score,350,520)
             self.score_5.setDepth(7)
             break
+        self.sp_retry = self.factory.from_text('Press "p" to retry...',fontmanager=fonts.make_font('GameOverScore'))
+        self.retry = sprite_classes.Inert(self.world, self.sp_retry,300,580)
+        self.retry.setDepth(7)
+        while globals.game_over_lock == True:                # Wait for user-input
+            events = sdl2.ext.get_events()
+            for event in events:
+                self.handleEvent(event)
+            self.world.process()
 
-        self.blank.setDepth(6)
-        self.world.process()
-        sdl2.SDL_Delay(6000)
         self.score = 0                  # Reset the score
-
         entity = self.world.get_entities(self.gameover.sprite)[0]
         entity.delete()
         entity = self.world.get_entities(self.your_score.sprite)[0]
@@ -153,7 +158,8 @@ class SalmonRun(game.Game):
         entity.delete()
         entity = self.world.get_entities(self.score_5.sprite)[0]
         entity.delete()
-
+        entity = self.world.get_entities(self.retry.sprite)[0]
+        entity.delete()
         self.blank.setDepth(0)
         globals.clear_meals = False
         globals.grow_salmon = False
@@ -281,6 +287,13 @@ class SalmonRun(game.Game):
                 if event.key.keysym.sym == sdl2.SDLK_p:
                     globals.home_lock = False
                     self.render_play()          # Render game play screen
+        elif globals.game_over_lock == True:
+            if event.type == sdl2.SDL_QUIT:
+                globals.game_over_lock = False
+                globals.running = False
+            if event.type == sdl2.SDL_KEYDOWN:
+                if event.key.keysym.sym == sdl2.SDLK_p:
+                    globals.game_over_lock = False
         # Handle game play events:
         else:
             if event.type == sdl2.SDL_QUIT:
@@ -333,6 +346,7 @@ class SalmonRun(game.Game):
             # Death process:
             if globals.death == True:
                 self.save_score(self.score)
+                globals.game_over_lock = True
                 self.render_game_over()         # Render Game Over screen & delete sprites
                 globals.death = False
                 globals.home_lock = True
