@@ -18,15 +18,11 @@ class CollisionSystem(sdl2.ext.Applicator):
 
     def _overlap(self, item):
         size, pos, sprite = item
-
         if sprite.depth != 3:
             return False
-
         left, top, right, bottom = sprite.area
         s_left, s_top, s_right, s_bottom = self.salmon.sprite.area
-
-        coll = s_left < right and s_right > left and \
-               s_top < bottom and s_bottom > top
+        coll = s_left < right and s_right > left and s_top < bottom and s_bottom > top
 
         if coll:
             coll = False
@@ -59,10 +55,8 @@ class CollisionSystem(sdl2.ext.Applicator):
 
     def _enemy_obstacle_overlap(self, item, obstacles):
         size, pos, sprite = item
-
         if sprite.depth != 3 or ((sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) in [1628,2450]):
             return (False, None)
-
         left, top, right, bottom = sprite.area
         coll = False
         o_type = None

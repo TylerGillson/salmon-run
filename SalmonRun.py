@@ -94,13 +94,67 @@ class SalmonRun(game.Game):
 
     def render_game_over(self):
         self.sp_gameover = self.factory.from_text('GAME OVER',fontmanager=fonts.make_font('GameOver'))
-        self.gameover = sprite_classes.Inert(self.world, self.sp_gameover,112,200)
+        self.gameover = sprite_classes.Inert(self.world, self.sp_gameover,112,110)
         self.gameover.setDepth(7)
+        # Print scores to screen:
+        self.sp_your_score = self.factory.from_text('Your Score: '+str(self.score),fontmanager=fonts.make_font('GameOverScore'))
+        self.your_score = sprite_classes.Inert(self.world, self.sp_your_score,250,240)
+        self.your_score.setDepth(7)
+        self.sp_top_scores = self.factory.from_text('Top Scores:',fontmanager=fonts.make_font('GameOverScore'))
+        self.top_scores = sprite_classes.Inert(self.world, self.sp_top_scores,250,300)
+        self.top_scores.setDepth(7)
+        top_scores_f = open('top_scores.txt', 'r')
+        top_scores = top_scores_f.readlines()
+        to_print = len(top_scores)
+        while True:
+            self.sp_a_score = self.factory.from_text('1: '+top_scores[0][:-1:],fontmanager=fonts.make_font('GameOverScore'))
+            self.score_1 = sprite_classes.Inert(self.world, self.sp_a_score,300,360)
+            self.score_1.setDepth(7)
+            if to_print == 1:
+                break
+            self.sp_a_score = self.factory.from_text('2: '+top_scores[1][:-1:],fontmanager=fonts.make_font('GameOverScore'))
+            self.score_2 = sprite_classes.Inert(self.world, self.sp_a_score,300,410)
+            self.score_2.setDepth(7)
+            if to_print == 2:
+                break
+            self.sp_a_score = self.factory.from_text('3: '+top_scores[2][:-1:],fontmanager=fonts.make_font('GameOverScore'))
+            self.score_3 = sprite_classes.Inert(self.world, self.sp_a_score,300,460)
+            self.score_3.setDepth(7)
+            if to_print == 3:
+                break
+            self.sp_a_score = self.factory.from_text('4: '+top_scores[3][:-1:],fontmanager=fonts.make_font('GameOverScore'))
+            self.score_4 = sprite_classes.Inert(self.world, self.sp_a_score,300,510)
+            self.score_4.setDepth(7)
+            if to_print == 4:
+                break
+            self.sp_a_score = self.factory.from_text('5: '+top_scores[4][:-1:],fontmanager=fonts.make_font('GameOverScore'))
+            self.score_5 = sprite_classes.Inert(self.world, self.sp_a_score,300,560)
+            self.score_5.setDepth(7)
+            break
+
         self.blank.setDepth(6)
         self.world.process()
-        sdl2.SDL_Delay(2000)
+        sdl2.SDL_Delay(6000)
+        self.score = 0                  # Reset the score
+
+        entity = self.world.get_entities(self.gameover.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.your_score.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.top_scores.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.score_1.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.score_2.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.score_3.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.score_4.sprite)[0]
+        entity.delete()
+        entity = self.world.get_entities(self.score_5.sprite)[0]
+        entity.delete()
+
         self.blank.setDepth(0)
-        self.gameover.setDepth(0)
         globals.clear_meals = False
         globals.grow_salmon = False
 
@@ -195,6 +249,28 @@ class SalmonRun(game.Game):
         self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
         self.energy_bar.setDepth(5)
 
+    def save_score(self,score):
+        top_scores = open('top_scores.txt', 'a+')
+        top_scores.seek(0,0)
+        lines = top_scores.readlines()
+        if not lines:
+            lines.append(str(score))
+        else:
+            counter = 0
+            for line in lines:
+                if score > int(line.strip()):
+                    break
+                counter += 1
+            lines.insert(counter,str(score))
+
+        if len(lines) > 5:
+            del lines[-1]
+        top_scores.seek(0,0)
+        top_scores.truncate()
+        for line in lines:
+            top_scores.write(line.strip()+'\n')
+        top_scores.close()
+
     def handleEvent(self, event):
         # Handle home screen events:
         if globals.home_lock == True:
@@ -256,7 +332,7 @@ class SalmonRun(game.Game):
                 self.grow_salmon()
             # Death process:
             if globals.death == True:
-                self.score = 0                  # Reset the score
+                self.save_score(self.score)
                 self.render_game_over()         # Render Game Over screen & delete sprites
                 globals.death = False
                 globals.home_lock = True
