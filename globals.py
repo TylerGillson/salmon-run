@@ -7,3 +7,4 @@ home_lock = True # home_lock makes world.process() safe when rendering the home 
 clear_meals = False
 grow_salmon = False
 game_over_lock = False
+pause = False

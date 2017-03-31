@@ -45,6 +45,15 @@ class SoftwareRenderer(sdl2.ext.SoftwareSpriteRenderSystem):
             if energy_bar:
                 entity = world.get_entities(energy_bar[0])[0]
                 entity.delete()
+            # Delete pause bars:
+            pause_barL = [sprite for sprite in components if sprite.depth == 5 and sprite.x==300]
+            if pause_barL:
+                entity = world.get_entities(pause_barL[0])[0]
+                entity.delete()
+            pause_barR = [sprite for sprite in components if sprite.depth == 5 and sprite.x == 370]
+            if pause_barR:
+                entity = world.get_entities(pause_barR[0])[0]
+                entity.delete()
         # Home Screen Rendering:
         else:
             # Simply render everything according to z-layering depths:

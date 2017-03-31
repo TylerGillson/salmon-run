@@ -309,6 +309,17 @@ class SalmonRun(game.Game):
                     self.salmon.velocity.vy = 6
                 elif event.key.keysym.sym == sdl2.SDLK_ESCAPE:
                     globals.running = False
+                elif event.key.keysym.sym == sdl2.SDLK_SPACE:
+                   if globals.pause == False:
+                       globals.pause = True
+                       self.sp_pauseL = self.factory.from_color((255, 255, 255, 0), (50, 100))
+                       self.pause_barL = sprite_classes.Inert(self.world, self.sp_pauseL, 300, 300)
+                       self.pause_barL.setDepth(5)
+                       self.sp_pauseR = self.factory.from_color((255, 255, 255, 0), (50, 100))
+                       self.pause_barR = sprite_classes.Inert(self.world, self.sp_pauseR, 370, 300)
+                       self.pause_barR.setDepth(5)
+                   elif globals.pause == True:
+                       globals.pause = False
             elif event.type == sdl2.SDL_KEYUP:
                 if event.key.keysym.sym in (sdl2.SDLK_LEFT, sdl2.SDLK_RIGHT, sdl2.SDLK_UP, sdl2.SDLK_DOWN):
                     self.salmon.velocity.vx -= 1
@@ -319,42 +330,47 @@ class SalmonRun(game.Game):
         self.render_home()                      # Render home screen
         globals.running = True
         while globals.running:                  # Begin event loop
-            self.render_score()                 # Display the score
-            self.render_meals()                 # Display meals
-            delta_t = int(time.time()-self.start_t)
-            # Spawn Enemies:
-            if delta_t != self.old_t:
-                self.manage_spawn(delta_t)      # Spawn enemies
-                self.decrement_energy()
-                if self.old_t % 3 == 0:
-                    if self.salmon.velocity.vy < 0:
-                        self.spawn_tree('left')
-                elif self.old_t % 3 == 1:
-                    if self.salmon.velocity.vy < 0:
-                        self.spawn_tree('right')
-                elif self.old_t % 4 == 0:       # Spawn rocks
-                    self.spawn_rock()
-                if self.old_t % 12 == 0:        # Spawn whirlpools
-                    self.spawn_whirlpool()
-            # Process SDL events:
-            events = sdl2.ext.get_events()
-            for event in events:
-                self.handleEvent(event)
-            # Grow salmon sprite every five meals:
-            if globals.grow_salmon:
-                self.grow_salmon()
-            # Death process:
-            if globals.death == True:
-                self.save_score(self.score)
-                globals.game_over_lock = True
-                self.render_game_over()         # Render Game Over screen & delete sprites
-                globals.death = False
-                globals.home_lock = True
-                self.render_home()              # Render home screen
-            self.old_t = delta_t
-            sdl2.SDL_Delay(15)
-            self.world.process()
-            self.render_energy(self.salmon.energy.energy)
+            if globals.pause == False:
+                self.render_score()                 # Display the score
+                self.render_meals()                 # Display meals
+                delta_t = int(time.time()-self.start_t)
+                # Spawn Enemies:
+                if delta_t != self.old_t:
+                    self.manage_spawn(delta_t)      # Spawn enemies
+                    self.decrement_energy()
+                    if self.old_t % 3 == 0:
+                        if self.salmon.velocity.vy < 0:
+                            self.spawn_tree('left')
+                    elif self.old_t % 3 == 1:
+                        if self.salmon.velocity.vy < 0:
+                            self.spawn_tree('right')
+                    elif self.old_t % 4 == 0:       # Spawn rocks
+                        self.spawn_rock()
+                    if self.old_t % 12 == 0:        # Spawn whirlpools
+                        self.spawn_whirlpool()
+                # Process SDL events:
+                events = sdl2.ext.get_events()
+                for event in events:
+                    self.handleEvent(event)
+                # Grow salmon sprite every five meals:
+                if globals.grow_salmon:
+                    self.grow_salmon()
+                # Death process:
+                if globals.death == True:
+                    self.save_score(self.score)
+                    globals.game_over_lock = True
+                    self.render_game_over()         # Render Game Over screen & delete sprites
+                    globals.death = False
+                    globals.home_lock = True
+                    self.render_home()              # Render home screen
+                self.old_t = delta_t
+                sdl2.SDL_Delay(15)
+                self.world.process()
+                self.render_energy(self.salmon.energy.energy)
+            while globals.pause:
+                events = sdl2.ext.get_events()
+                for event in events:
+                    self.handleEvent(event)
         sdl2.ext.quit()
         return 0
 
