@@ -38,6 +38,20 @@ class SalmonRun(game.Game):
         # Init enemy sizes array:
         self.esizes = [x for x in range(0,15)]
 
+    def add_image_sprite(self, filename, s_type, x, y, depth):
+        self.sp_new_sprite = self.factory.from_image(RESOURCES.get_path(filename))
+        if s_type == 'inert':
+            self.new_sprite = sprite_classes.Inert(self.world, self.sp_new_sprite, x, y)
+        elif s_type == 'player':
+            self.new_sprite = sprite_classes.Player(self.world, self.sp_new_sprite, x, y)
+        elif s_type == 'enemy':
+            self.new_sprite = sprite_classes.Enemy(self.world, self.sp_new_sprite, x, y)
+        self.new_sprite.setDepth(depth)
+
+    def delete(self, object):
+        entity = self.world.get_entities(object.sprite)[0]
+        entity.delete()
+
     def render_home(self):
         music.play_sample('Bubbles.wav', True)
         self.sp_title = self.factory.from_text('SALMON RUN',fontmanager=fonts.make_font('Title'))
@@ -47,12 +61,29 @@ class SalmonRun(game.Game):
         self.play = sprite_classes.Inert(self.world, self.sp_play,150,330)
         self.play.setDepth(7)
         self.blank.setDepth(6)
-        while globals.home_lock == True:                # Wait for user-input
+        # Display size guide:
+        x = 110
+        y = 450
+        size_guide_sprites = []
+        for i in range(15):
+            self.add_image_sprite('enemy'+str(i)+'.bmp', 'inert', x, y, 7)
+            size_guide_sprites.append(self.new_sprite)
+            if i < 5:
+                x += 30
+            elif i < 10:
+                x += 40
+            else:
+                x += 50
+        # Wait for user-input:
+        while globals.home_lock == True:
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
             self.world.process()
+        # Clean up:
         self.blank.setDepth(0)
+        for sprite in size_guide_sprites:
+            self.delete(sprite)
         self.delete(self.title)
         self.delete(self.play)
 
@@ -74,66 +105,57 @@ class SalmonRun(game.Game):
         self.dashboard.setDepth(4)
         self.world.process()
 
+    def add_text_sprite(self, text, font_type, x, y, depth):
+        self.sp_new_text = self.factory.from_text(text, fontmanager=fonts.make_font(font_type))
+        self.new_text = sprite_classes.Inert(self.world, self.sp_new_text, x, y)
+        self.new_text.setDepth(depth)
+
     def render_game_over(self):
         self.blank.setDepth(6)
-        self.sp_gameover = self.factory.from_text('GAME OVER',fontmanager=fonts.make_font('GameOver'))
-        self.gameover = sprite_classes.Inert(self.world, self.sp_gameover,112,110)
-        self.gameover.setDepth(7)
+        text_sprites = []
+        self.add_text_sprite('GAME OVER', 'GameOver', 112, 110, 7)
+        text_sprites.append(self.new_text)
         # Print scores to screen:
-        self.sp_your_score = self.factory.from_text('Your Score: '+str(self.score),fontmanager=fonts.make_font('GameOverScore'))
-        self.your_score = sprite_classes.Inert(self.world, self.sp_your_score,300,240)
-        self.your_score.setDepth(7)
-        self.sp_top_scores = self.factory.from_text('Top Scores:',fontmanager=fonts.make_font('GameOverScore'))
-        self.top_scores = sprite_classes.Inert(self.world, self.sp_top_scores,300,300)
-        self.top_scores.setDepth(7)
+        self.add_text_sprite('Your Score: '+str(self.score), 'GameOverScore', 300, 240, 7)
+        text_sprites.append(self.new_text)
+        self.add_text_sprite('Top Scores:', 'GameOverScore', 300, 300, 7)
+        text_sprites.append(self.new_text)
         top_scores_f = open('top_scores.txt', 'r')
         top_scores = top_scores_f.readlines()
         to_print = len(top_scores)
         while True:
-            self.sp_a_score = self.factory.from_text('1: '+top_scores[0][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_1 = sprite_classes.Inert(self.world, self.sp_a_score,350,360)
-            self.score_1.setDepth(7)
+            self.add_text_sprite('1: '+top_scores[0][:-1:], 'GameOverScore', 350, 360, 7)
+            text_sprites.append(self.new_text)
             if to_print == 1:
                 break
-            self.sp_a_score = self.factory.from_text('2: '+top_scores[1][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_2 = sprite_classes.Inert(self.world, self.sp_a_score,350,400)
-            self.score_2.setDepth(7)
+            self.add_text_sprite('2: '+top_scores[1][:-1:], 'GameOverScore', 350, 400, 7)
+            text_sprites.append(self.new_text)
             if to_print == 2:
                 break
-            self.sp_a_score = self.factory.from_text('3: '+top_scores[2][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_3 = sprite_classes.Inert(self.world, self.sp_a_score,350,440)
-            self.score_3.setDepth(7)
+            self.add_text_sprite('3: '+top_scores[2][:-1:], 'GameOverScore', 350, 440, 7)
+            text_sprites.append(self.new_text)
             if to_print == 3:
                 break
-            self.sp_a_score = self.factory.from_text('4: '+top_scores[3][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_4 = sprite_classes.Inert(self.world, self.sp_a_score,350,480)
-            self.score_4.setDepth(7)
+            self.add_text_sprite('4: '+top_scores[3][:-1:], 'GameOverScore', 350, 480, 7)
+            text_sprites.append(self.new_text)
             if to_print == 4:
                 break
-            self.sp_a_score = self.factory.from_text('5: '+top_scores[4][:-1:],fontmanager=fonts.make_font('GameOverScore'))
-            self.score_5 = sprite_classes.Inert(self.world, self.sp_a_score,350,520)
-            self.score_5.setDepth(7)
+            self.add_text_sprite('5: '+top_scores[4][:-1:], 'GameOverScore', 350, 520, 7)
+            text_sprites.append(self.new_text)
             break
-        self.sp_retry = self.factory.from_text('Press "p" to retry...',fontmanager=fonts.make_font('GameOverScore'))
-        self.retry = sprite_classes.Inert(self.world, self.sp_retry,300,580)
-        self.retry.setDepth(7)
-        while globals.game_over_lock == True:                # Wait for user-input
+        self.add_text_sprite('Press "p" to retry...', 'GameOverScore', 300, 580, 7)
+        text_sprites.append(self.new_text)
+        # Wait for user-input
+        while globals.game_over_lock == True:
             events = sdl2.ext.get_events()
             for event in events:
                 self.handleEvent(event)
             self.world.process()
         # Clean up:
         self.score = 0                  # Reset the score
-        self.delete(self.gameover)
-        self.delete(self.your_score)
-        self.delete(self.top_scores)
-        self.delete(self.score_1)
-        self.delete(self.score_2)
-        self.delete(self.score_3)
-        self.delete(self.score_4)
-        self.delete(self.score_5)
-        self.delete(self.retry)
         self.blank.setDepth(0)
+        for sprite in text_sprites:
+            self.delete(sprite)
         globals.clear_meals = False
         globals.grow_salmon = False
 
@@ -194,12 +216,8 @@ class SalmonRun(game.Game):
             velocity = self.salmon.velocity.get_velocity()
             energy = self.salmon.energy.energy
             self.delete(self.salmon)                                # Delete old salmon
-            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon:
+            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon
             globals.grow_salmon = False
-
-    def delete(self, object):
-        entity = self.world.get_entities(object.sprite)[0]
-        entity.delete()
 
     def manage_spawn(self, delta_t):
         num = random.randint(1,3)
@@ -263,7 +281,6 @@ class SalmonRun(game.Game):
                     break
                 counter += 1
             lines.insert(counter,str(score))
-
         if len(lines) > 5:
             del lines[-1]
         top_scores.seek(0,0)

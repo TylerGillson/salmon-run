@@ -115,4 +115,4 @@ class CollisionSystem(sdl2.ext.Applicator):
                         entity.delete()
                     elif enemy[1] == 'whirlpool':
                         enemy[0][1].vx = random.randint(-30,30)
-                        enemy[0][1].vy = random.randint(0,30)
+                        enemy[0][1].vy = random.randint(1,30)
