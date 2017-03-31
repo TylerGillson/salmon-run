@@ -33,6 +33,10 @@ class MovementSystem(sdl2.ext.Applicator):
             # Slow down enemies launched by whirlpools:
             if velocity.vy > 10:
                 velocity.vy -= 2
+            # Giant fish:
+            if (sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) == 432000:
+                sprite.y += 4
+                continue
 
             swidth, sheight = sprite.size
             sprite.x += velocity.vx

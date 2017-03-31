@@ -55,6 +55,9 @@ class CollisionSystem(sdl2.ext.Applicator):
 
     def _enemy_obstacle_overlap(self, item, obstacles):
         size, pos, sprite = item
+        # Hack for evil fish:
+        if size.size > 100:
+            return False, 'rock'
         if sprite.depth != 3 or ((sprite.area[2]-sprite.area[0]) * (sprite.area[3]-sprite.area[1]) in [1628,2450]):
             return (False, None)
         left, top, right, bottom = sprite.area

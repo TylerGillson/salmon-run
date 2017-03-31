@@ -183,6 +183,17 @@ class SalmonRun(game.Game):
         self.movement.salmon = self.salmon
         self.aicontroller.target = self.salmon
 
+    def grow_salmon(self):
+        x,y = self.salmon.sprite.position
+        size = self.salmon.size.size
+        if size < 14:
+            meals = self.salmon.meals.meals
+            velocity = self.salmon.velocity.get_velocity()
+            energy = self.salmon.energy.energy
+            self.delete(self.salmon)                                # Delete old salmon
+            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon
+            globals.grow_salmon = False
+
     def init_energy_bar(self):
         self.render_energy(155)
         self.sp_energybar_border = self.factory.from_image(RESOURCES.get_path('energy_bar_border.bmp'))
@@ -208,17 +219,6 @@ class SalmonRun(game.Game):
         self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
         self.energy_bar.setDepth(5)
 
-    def grow_salmon(self):
-        x,y = self.salmon.sprite.position
-        size = self.salmon.size.size
-        if size < 14:
-            meals = self.salmon.meals.meals
-            velocity = self.salmon.velocity.get_velocity()
-            energy = self.salmon.energy.energy
-            self.delete(self.salmon)                                # Delete old salmon
-            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon
-            globals.grow_salmon = False
-
     def manage_spawn(self, delta_t):
         num = random.randint(1,3)
         ai_flag = True if num == 1 else False       # Give 1/3 of enemies ai
@@ -233,6 +233,13 @@ class SalmonRun(game.Game):
             ai_flag = False
         enemy_str = 'enemy' + str(esize) + '.bmp'
         self.spawn(enemy_str, esize, 3, ai_flag)
+        # End game easter egg:
+        if self.salmon.size.size == 16 and globals.evil_fish == False:
+            sp_evil_fish = self.factory.from_image(RESOURCES.get_path('evil_fish.bmp'))
+            self.evil_fish = sprite_classes.Enemy(self.world, sp_evil_fish, (0,1), 100, -720, False)
+            self.evil_fish.size.size = 101
+            self.evil_fish.setDepth(3)
+            globals.evil_fish = True
 
     def spawn(self, path, size, depth, ai_flag):
         v = random.randint(1,10)
@@ -374,6 +381,7 @@ class SalmonRun(game.Game):
                     self.render_game_over()         # Render Game Over screen & delete sprites
                     globals.death = False
                     globals.home_lock = True
+                    globals.evil_fish = False
                     self.render_home()              # Render home screen
                 self.old_t = delta_t
                 sdl2.SDL_Delay(15)

@@ -40,7 +40,8 @@ class Size(object):
         super(Size, self).__init__()
         self.size = size
     def increment(self):
-        self.size += 1
+        if self.size < 16:
+            self.size += 1
     def decrement(self):
         self.size -= 1
 
