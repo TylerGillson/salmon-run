@@ -38,42 +38,6 @@ class SalmonRun(game.Game):
         # Init enemy sizes array:
         self.esizes = [x for x in range(0,15)]
 
-    def render_meals(self):
-        self.sp_skull = self.factory.from_image(RESOURCES.get_path('skull.bmp'))
-        self.skulls = [sprite_classes.Inert(self.world, self.sp_skull)] * self.salmon.meals.meals
-        x = 340
-        y = 15
-        for skull in self.skulls:
-            skull.setPos(x,y)
-            skull.setDepth(5)
-            x += 30
-
-    def render_score(self):
-        self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font('Score'))
-        self.score_obj = sprite_classes.Inert(self.world, self.sp_score,84,18)
-        self.score_obj.setDepth(5)
-        self.score += 1
-
-    def init_salmon(self, x, y, size=0, meals=0, velocity=(0,0), energy=155):
-        self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon' + str(size) + '.bmp'))
-        self.salmon = sprite_classes.Player(self.world, self.sp_salmon, x, y, size+1, meals, velocity, energy)
-        self.salmon.setDepth(2)
-        self.collision.salmon = self.salmon
-        self.movement.salmon = self.salmon
-        self.aicontroller.target = self.salmon
-
-    def grow_salmon(self):
-        x,y = self.salmon.sprite.position
-        size = self.salmon.size.size
-        if size < 14:
-            meals = self.salmon.meals.meals
-            velocity = self.salmon.velocity.get_velocity()
-            energy = self.salmon.energy.energy
-            entity = self.world.get_entities(self.salmon.sprite)[0] # Delete old salmon:
-            entity.delete()
-            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon:
-            globals.grow_salmon = False
-
     def render_home(self):
         music.play_sample('Bubbles.wav', True)
         self.sp_title = self.factory.from_text('SALMON RUN',fontmanager=fonts.make_font('Title'))
@@ -89,8 +53,26 @@ class SalmonRun(game.Game):
                 self.handleEvent(event)
             self.world.process()
         self.blank.setDepth(0)
-        self.title.setDepth(0)
-        self.play.setDepth(0)
+        self.delete(self.title)
+        self.delete(self.play)
+
+    def render_play(self):
+        music.play_music('Chiptune.wav',-1)     # Play background music
+        music.play_sample('Bubbles.wav', True)
+        self.init_salmon(450,550)
+        self.init_energy_bar()
+        # Init river & riverbanks then bring up the HUD:
+        self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
+        self.river = sprite_classes.Inert(self.world, self.sp_river, 0, 50)
+        self.river.setDepth(1)
+        self.sp_river_top = self.factory.from_image(RESOURCES.get_path('top.bmp'))
+        self.sp_river_bottom = self.factory.from_image(RESOURCES.get_path('bottom.bmp'))
+        self.river_top = sprite_classes.Enemy(self.world, self.sp_river_top, (0,1), 0, -550, False)
+        self.river_bottom = sprite_classes.Enemy(self.world, self.sp_river_bottom, (0,1), 0, 50, False)
+        self.river_top.setDepth(2)
+        self.river_bottom.setDepth(2)
+        self.dashboard.setDepth(4)
+        self.world.process()
 
     def render_game_over(self):
         self.blank.setDepth(6)
@@ -140,29 +122,44 @@ class SalmonRun(game.Game):
             for event in events:
                 self.handleEvent(event)
             self.world.process()
-
+        # Clean up:
         self.score = 0                  # Reset the score
-        entity = self.world.get_entities(self.gameover.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.your_score.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.top_scores.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.score_1.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.score_2.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.score_3.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.score_4.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.score_5.sprite)[0]
-        entity.delete()
-        entity = self.world.get_entities(self.retry.sprite)[0]
-        entity.delete()
+        self.delete(self.gameover)
+        self.delete(self.your_score)
+        self.delete(self.top_scores)
+        self.delete(self.score_1)
+        self.delete(self.score_2)
+        self.delete(self.score_3)
+        self.delete(self.score_4)
+        self.delete(self.score_5)
+        self.delete(self.retry)
         self.blank.setDepth(0)
         globals.clear_meals = False
         globals.grow_salmon = False
+
+    def render_meals(self):
+        self.sp_skull = self.factory.from_image(RESOURCES.get_path('skull.bmp'))
+        self.skulls = [sprite_classes.Inert(self.world, self.sp_skull)] * self.salmon.meals.meals
+        x = 340
+        y = 15
+        for skull in self.skulls:
+            skull.setPos(x,y)
+            skull.setDepth(5)
+            x += 30
+
+    def render_score(self):
+        self.sp_score = self.factory.from_text(str(self.score),fontmanager=fonts.make_font('Score'))
+        self.score_obj = sprite_classes.Inert(self.world, self.sp_score,84,18)
+        self.score_obj.setDepth(5)
+        self.score += 1
+
+    def init_salmon(self, x, y, size=0, meals=0, velocity=(0,0), energy=155):
+        self.sp_salmon = self.factory.from_image(RESOURCES.get_path('salmon' + str(size) + '.bmp'))
+        self.salmon = sprite_classes.Player(self.world, self.sp_salmon, x, y, size+1, meals, velocity, energy)
+        self.salmon.setDepth(2)
+        self.collision.salmon = self.salmon
+        self.movement.salmon = self.salmon
+        self.aicontroller.target = self.salmon
 
     def init_energy_bar(self):
         self.render_energy(155)
@@ -170,31 +167,39 @@ class SalmonRun(game.Game):
         self.energybar_border = sprite_classes.Inert(self.world, self.sp_energybar_border,623,8)
         self.energybar_border.setDepth(5)
 
-    def render_play(self):
-        music.play_music('Chiptune.wav',-1)     # Play background music
-        music.play_sample('Bubbles.wav', True)
-        self.init_salmon(450,550)
-        self.init_energy_bar()
-        # Init river & riverbanks then bring up the HUD:
-        self.sp_river = self.factory.from_image(RESOURCES.get_path('river.bmp'))
-        self.river = sprite_classes.Inert(self.world, self.sp_river, 0, 50)
-        self.river.setDepth(1)
-        self.sp_river_top = self.factory.from_image(RESOURCES.get_path('top.bmp'))
-        self.sp_river_bottom = self.factory.from_image(RESOURCES.get_path('bottom.bmp'))
-        self.river_top = sprite_classes.Enemy(self.world, self.sp_river_top, (0,1), 0, -550, False)
-        self.river_bottom = sprite_classes.Enemy(self.world, self.sp_river_bottom, (0,1), 0, 50, False)
-        self.river_top.setDepth(2)
-        self.river_bottom.setDepth(2)
-        self.dashboard.setDepth(4)
-        self.world.process()
+    def decrement_energy(self):
+        self.salmon.energy.energy -= 4
+        if self.salmon.energy.energy <= 0:
+            globals.death = True
 
-    def spawn(self, path, size, depth, ai_flag):
-        v = random.randint(1,10)
-        x = random.randint(90,610)
-        sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
-        self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, ai_flag)
-        self.enemy.size.size = size
-        self.enemy.setDepth(depth)
+    def render_energy(self,w):
+        if self.salmon.energy.energy > 103:
+            color = (0,255,0,0)
+        elif self.salmon.energy.energy > 51:
+            color = (237,239,0,0)
+        else:
+            color = (255,0,0,0)
+        if w > 155:
+            w = 155
+            self.salmon.energy.energy = 155
+        self.sp_energy = self.factory.from_color(color,(w,30))
+        self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
+        self.energy_bar.setDepth(5)
+
+    def grow_salmon(self):
+        x,y = self.salmon.sprite.position
+        size = self.salmon.size.size
+        if size < 14:
+            meals = self.salmon.meals.meals
+            velocity = self.salmon.velocity.get_velocity()
+            energy = self.salmon.energy.energy
+            self.delete(self.salmon)                                # Delete old salmon
+            self.init_salmon(x,y,size-1,meals,velocity,energy)      # Init new salmon:
+            globals.grow_salmon = False
+
+    def delete(self, object):
+        entity = self.world.get_entities(object.sprite)[0]
+        entity.delete()
 
     def manage_spawn(self, delta_t):
         num = random.randint(1,3)
@@ -210,6 +215,14 @@ class SalmonRun(game.Game):
             ai_flag = False
         enemy_str = 'enemy' + str(esize) + '.bmp'
         self.spawn(enemy_str, esize, 3, ai_flag)
+
+    def spawn(self, path, size, depth, ai_flag):
+        v = random.randint(1,10)
+        x = random.randint(90,610)
+        sp_enemy = self.factory.from_image(RESOURCES.get_path(path))
+        self.enemy = sprite_classes.Enemy(self.world, sp_enemy, (0,v), x, 0, ai_flag)
+        self.enemy.size.size = size
+        self.enemy.setDepth(depth)
 
     def spawn_tree(self,side):
         if side == 'left':
@@ -236,24 +249,6 @@ class SalmonRun(game.Game):
         self.whirlpool = sprite_classes.Enemy(self.world, sp_whirlpool, (0,1), x, 50, False)
         self.whirlpool.setDepth(3)
         self.whirlpool.size.size = 50
-
-    def decrement_energy(self):
-        self.salmon.energy.energy -= 4
-        if self.salmon.energy.energy <= 0:
-            globals.death = True
-
-    def render_energy(self,w):
-        if self.salmon.energy.energy > 103:
-            color = (0,255,0,0)
-        elif self.salmon.energy.energy > 51:
-            color = (237,239,0,0)
-        else:
-            color = (255,0,0,0)
-        if w > 155:
-            w = 155
-        self.sp_energy = self.factory.from_color(color,(w,30))
-        self.energy_bar = sprite_classes.Inert(self.world,self.sp_energy,625,10)
-        self.energy_bar.setDepth(5)
 
     def save_score(self,score):
         top_scores = open('top_scores.txt', 'a+')
@@ -327,9 +322,9 @@ class SalmonRun(game.Game):
 
     def run(self):
         music.init_audio()
-        self.render_home()                      # Render home screen
+        self.render_home()                          # Render home screen
         globals.running = True
-        while globals.running:                  # Begin event loop
+        while globals.running:                      # Begin event loop
             if globals.pause == False:
                 self.render_score()                 # Display the score
                 self.render_meals()                 # Display meals
